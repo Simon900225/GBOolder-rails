@@ -10,13 +10,8 @@
       <div class="relative">
 
         <div class="flex justify-center my-4 lg:mb-8">
-          <%= link_to "https://apps.apple.com/#{I18n.locale == :en ? "us" : "fr"}/app/boolder/id1506614493#?platform=iphone" do %>
-            <div class="object-contain h-24">
-              <%= image_tag "app-store-badge-#{I18n.locale}.png", class:"object-contain h-24 p-4" %>  
-            </div>
-          <% end %>
-          <%= link_to "https://play.google.com/store/apps/details?id=com.boolder.boolder" do %>
-            <%= image_tag "play-store-badge-#{I18n.locale}.png", class:"object-contain h-24 p-4" %>
+          <%= link_to map_path, class: "inline-flex items-center rounded-md border border-transparent bg-emerald-600 px-6 py-3 text-base font-medium text-white hover:bg-emerald-700" do %>
+            <%= t("views.homepage.see_map") %>
           <% end %>
         </div>
 

@@ -23,7 +23,9 @@
         </div>
       </nav>
 
-      <div></div>
+      <div class="hidden sm:block px-4 py-2 text-sm text-gray-400 max-w-md text-right">
+        <%= t('views.layout.footer.attribution_html') %>
+      </div>
 
       <nav class="flex flex-wrap justify-center" aria-label="Footer">
         <% if I18n.locale == :en %>
@@ -37,6 +39,10 @@
         <% end %>
         
       </nav>
+    </div>
+
+    <div class="sm:hidden px-4 py-3 text-sm text-gray-400 text-center border-t border-gray-100 mt-2">
+      <%= t('views.layout.footer.attribution_html') %>
     </div>
   </div>
 </footer>

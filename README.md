@@ -1,82 +1,222 @@
-# Boolder Rails
+# GBOolder Rails
 
-Boolder is the best way to discover bouldering in Fontainebleau. 
+**GBOolder** is a community-driven bouldering guide for Gothenburg and the Swedish west coast.
 
-This is the code powering the [Boolder website](https://www.boolder.com) and all the backend & data processing.
+This repo powers the GBOolder website and backend. It is a fork of [Boolder Rails](https://github.com/boolder-org/boolder-rails), the app behind [boolder.com](https://www.boolder.com).
 
-NB: if you just want a quick access to the data, check out [boolder-data](https://github.com/boolder-org/boolder-data)
+Exported app data lives in [GBOolder-data](../GBOolder-data/).
+
+## Data sources & attribution
+
+| Source | Use | License |
+|--------|-----|---------|
+| [GBO](https://gbo.crimp.se/) | Problem names, grades, areas, ascents, photos (initial import) | [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) |
+| [Boolder](https://www.boolder.com) | App architecture, mapping workflow, contribution system | See upstream repo |
+
+When publishing GBOolder data or derivatives, attribute GBO and keep the same NC-SA terms.
 
 ## Stack
 
-- Ruby On Rails
-- PostgreSQL
+- Ruby on Rails 8
+- PostgreSQL + PostGIS
 - Tailwind CSS
 - [Stimulus](https://stimulus.hotwired.dev) and [Turbo](https://turbo.hotwired.dev)
+- Mapbox GL JS (map tiles and vector layers)
 
+## What already exists (from Boolder)
 
-## How to run the app (on a Mac)
+The fork includes a full bouldering platform. Most of it applies directly to GBOolder; Fontainebleau-specific pieces need replacing.
 
-### Install homebrew
+### Core data model
 
-- See https://brew.sh/
+| Model | Role |
+|-------|------|
+| `Area` | Climbing area (e.g. Utby, Hönö) |
+| `Cluster` | Group of nearby areas |
+| `Problem` | A climb on a boulder (name, grade, GPS point, topo lines) |
+| `Boulder` | PostGIS polygon drawn on the map |
+| `Circuit` | Ordered collection of problems (Font circuits — less central for GBO) |
+| `Topo` / `Line` | Boulder photo + drawn line showing the problem |
+| `Poi` / `PoiRoute` | Parking, bus stops, walking routes to areas |
 
-### Install Ruby
+### Public website
 
-- `brew install rbenv libyaml`
-- `rbenv install 3.3.5` (replace `3.3.5` with the content of `.ruby-version`)
+- Interactive map with problem dots and boulder polygons (Mapbox vector tiles)
+- Area and problem pages, search, filters
+- `/contribute` — entry point for community help
+- `/mapping` — contributor workflow for missing photos, lines, and GPS
 
-### Install Postgre
-- cd to the app directory
-- `brew install postgresql`
-- `brew install postgis`
-- `brew services start postgresql`
-- `createdb dump-prod`
+### Community contribution (partial)
 
-### Set up the app
-- cd to the app directory
-- install rails: `sudo gem install rails`
-- `bundle install`
-- `rake db:setup`
+Boolder already has contribution infrastructure, but it is **review-heavy and not fully self-service**:
 
-### Import prod data
-- `dropdb dump-prod && createdb dump-prod`
-- `psql -d dump-prod < db/dump-prod.sql`
-- `rake db:migrate`
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Report mistakes / suggest changes | ✅ | `ReportsController` → email to admins |
+| Submit topo photos, line drawings, location sketches | ✅ | `Contribution` model + file uploads |
+| Optional GPS coordinates on contribution | ✅ | Manual lat/lon fields |
+| Contribution requests (admin asks for specific problems) | ✅ | `ContributionRequest` |
+| In-browser map editing | ❌ | Contributors upload files; admins apply changes |
+| User accounts / reputation | ❌ | Session-stored name + email only |
+| Direct community boulder drawing | ❌ | Requires JOSM + admin GeoJSON import |
+| Auto-merge accepted contributions | ❌ | Admin reviews and applies manually |
 
-### Run the app
+**This is the main gap for your community-driven goal** — the bones exist, but the workflow is designed for a small admin team, not open crowd-sourcing.
 
-- `bin/dev`
+### Admin & mapping pipeline
 
-### Mapbox credentials
+| Tool | Purpose |
+|------|---------|
+| **JOSM** + Fastdraw plugin | Draw boulder polygons and adjust problem GPS in GeoJSON |
+| **GeoJSON import** (`Import` model) | Upload edited GeoJSON; preview diff; apply to database |
+| `rake josm_legacy:geojson` | Export area data for JOSM |
+| `rake mapbox:*` | Export GeoJSON for Mapbox tilesets |
+| `rake geo:compute` | Associate topos with boulders; order problems around polygon |
+| `rake app:db` | Build SQLite for mobile apps → GBOolder-data |
 
-- Create an account on https://www.mapbox.com. 
-- Go to the [Tokens]([url](https://account.mapbox.com/access-tokens/)) page and create a public token with all the public `scopes` (or just use the default token).
-- Back in the Rails app, copy the `.env.example` to `.env` and fill out `MAPBOX_DEV_ACCESS_KEY` with your token
-- Restart the server
+### Fontainebleau-specific (needs replacement)
 
-### Optional: JOSM
+| Piece | Replacement for GBOolder |
+|-------|--------------------------|
+| `bleau_areas` / `bleau_problems` + `bleau.rake` | Importer for [gbo.crimp.se](https://gbo.crimp.se/) |
+| `Area belongs_to :bleau_area` | Generalize or add `gbo_area` linkage |
+| Map bounds / Mapbox style / tilesets (`nmondollot.*`) | Gothenburg bounds (~57.6°N, 11.8°E) and your own Mapbox assets |
+| `/fontainebleau` routes | `/gothenburg` or area-centric URLs |
+| Font grade validation (`1a`–`9c+`) | GBO grades (`4`, `5+`, `6C`, `7B`, `Projekt`, …) |
+| French/English i18n | Swedish + English (at minimum) |
+| `db/dump-prod.sql` | GBO seed data |
 
-Josm is an open source tool used by the OpenStreetMap community.
-We use it to edit GeoJSON files.
+## Roadmap
 
-- Follow the instructions here: `https://josm.openstreetmap.de/wiki/Download#macOS`
-- Go to File > Preferences > Plugins
-- Click on the checkbox next to `Fastdraw` and `PicLayer`, and then click on OK
-- Restart Josm
-- In the menu bar (on the left), click on `Fast Drawing mode` and then type `Q` to enter the options dialog. Click on `Draw closed polygons only`, choose `3` for `Starting Epsilon` and `Simplify with initial epsilon` for `Enter key mode`
+### Phase 1 — Fork cleanup & branding
 
-## Contribute
+Environment variables (see `.env.example`):
 
-Want to help us improve the app for thousands of climbers? Great!
+| Variable | Purpose |
+|----------|---------|
+| `GBOOLDER_HOST` | Public site hostname for mailer URLs |
+| `GBOOLDER_ASSET_HOST` | CDN hostname for assets |
+| `GBOOLDER_CONTACT_EMAIL` | Contact + contribution notification email |
+| `GBOOLDER_MAIL_FROM` | Outgoing mail From header |
+| `GBOOLDER_ADMIN_USER` / `GBOOLDER_ADMIN_PASSWORD` | HTTP Basic admin auth (staging/production) |
+| `PLAUSIBLE_DOMAIN` | Analytics domain (blank = disabled) |
 
-Here are a few ways you can contribute:
-- Open an issue if you find a bug
-- Open an issue if you want to suggest an improvement
-- Open a Pull Request (please get in touch with us beforehand, though)
+- [x] Rename app constants, meta tags, emails (`GBOolder`)
+- [x] Replace Boolder branding in layouts and about page
+- [x] Point routes away from `/fontainebleau` toward `/gothenburg`
+- [x] Update admin credentials to env-based placeholders
+- [x] Document GBO attribution in UI footer and about page
 
-We already have a lot of features waiting to be built, and lots of new ideas to try out!
-We'd be happy to share the fun with you :)
+### Phase 2 — GBO data import
 
-As the project is still young, the best way to get started is to drop us a line at hello@boolder.com
+- [ ] Explore GBO data access (API, export, or structured scrape — confirm with GBO maintainers)
+- [ ] Build `gbo.rake` importer: areas → sectors → problems (name, grade, ascents, GBO id)
+- [ ] Map GBO grades to internal grade field (extend `Problem::GRADE_VALUES` or use free-text + normalization)
+- [ ] Import existing GPS coordinates from GBO as initial `Problem#location` (expect inaccuracy)
+- [ ] Import photos where available (respect license and attribution)
+- [ ] Decouple `Area` from `bleau_area` (migration + model change)
 
-You can also contribute to our mapping efforts at https://www.boolder.com/en/contribute
+### Phase 3 — Map infrastructure
+
+- [ ] Create Mapbox account, style, and tilesets for west Sweden
+- [ ] Update `mapbox_controller.js` bounds, style URL, and vector source IDs
+- [ ] Export and publish boulder + problem GeoJSON via `rake mapbox:problems`
+- [ ] Choose basemap strategy (Mapbox outdoors vs custom green overlay like Boolder)
+
+### Phase 4 — Boulder mapping (accuracy pass)
+
+Priority areas with dense problem counts (Utby, Hönö, Mellby, Sandsjöbacka, …):
+
+1. Export area GeoJSON: `rake josm_legacy:geojson area_id=X`
+2. Draw boulder polygons in JOSM (see JOSM setup below)
+3. Snap/adjust problem dots to boulder edges
+4. Upload GeoJSON via admin **Imports** → review → apply
+5. Run `rake geo:compute` to link topos to boulders
+6. Re-export Mapbox tilesets
+
+Repeat per area until map matches reality better than GBO.
+
+### Phase 5 — Community contributions (extend Boolder)
+
+Short term (low effort, reuse existing models):
+
+- [ ] Map-based GPS picker on contribution form (click to set lat/lon)
+- [ ] Contribution types: new problem, moved dot, new boulder outline, grade change
+- [ ] Public contribution queue with status (pending / accepted / rejected)
+- [ ] Notification when contribution is reviewed
+
+Medium term (your differentiator):
+
+- [ ] User accounts (OAuth or email magic link)
+- [ ] In-browser boulder polygon drawing (Mapbox Draw or similar) for trusted contributors
+- [ ] Semi-automated merge for simple GPS nudges within threshold
+- [ ] Area “steward” role to review local contributions
+- [ ] Sync accepted changes back to GBOolder-data export
+
+Long term:
+
+- [ ] Mobile app fork or PWA
+- [ ] Ascent logging synced with community (GBO already has this — consider API/integration)
+
+### Phase 6 — Data publishing
+
+- [ ] `rake app:db` → commit `gboolder.db` to GBOolder-data
+- [ ] GeoJSON exports in GBOolder-data
+- [ ] CI job to rebuild exports on data changes
+
+## How to run locally (Mac)
+
+### Prerequisites
+
+```bash
+brew install rbenv libyaml postgresql postgis
+brew services start postgresql
+rbenv install  # use version from .ruby-version
+```
+
+### Database & app
+
+```bash
+cd GBOolder-rails
+bundle install
+createdb gboolder-dev
+# Until GBO import exists, you can use the Boolder sample dump:
+createdb dump-prod && psql -d dump-prod < db/dump-prod.sql
+rake db:migrate
+bin/dev
+```
+
+> **Note:** `db/dump-prod.sql` is Fontainebleau data for development only. Production GBOolder will use GBO-imported data.
+
+### Mapbox
+
+1. Create an account at [mapbox.com](https://www.mapbox.com)
+2. Create a public token with default public scopes
+3. Copy `.env.example` to `.env` and set `MAPBOX_DEV_ACCESS_KEY`
+4. Eventually replace style/tileset URLs in `app/javascript/controllers/mapbox_controller.js` with your own Gothenburg assets
+
+### JOSM (boulder drawing)
+
+JOSM is the tool Boolder uses to edit GeoJSON offline.
+
+1. Install from [josm.openstreetmap.de](https://josm.openstreetmap.de/wiki/Download)
+2. **Preferences → Plugins:** enable `Fastdraw` and `PicLayer`
+3. Restart JOSM
+4. **Fast Drawing mode → Q (options):** `Draw closed polygons only`, Starting Epsilon `3`, Enter key mode `Simplify with initial epsilon`
+
+Workflow: export area GeoJSON → edit in JOSM → import via admin.
+
+## Contributing
+
+GBOolder is meant to be community-driven. Ways to help:
+
+- Improve GPS and boulder outlines on the map
+- Submit topo photos and line drawings via `/mapping`
+- Report incorrect grades or problem names
+- Open issues and pull requests in this repo
+
+For large mapping efforts, coordinate via issues so we don't duplicate work per area.
+
+## Contribute (upstream Boolder)
+
+Original Boolder contribution page: https://www.boolder.com/en/contribute

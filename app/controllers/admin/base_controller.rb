@@ -15,11 +15,11 @@ class Admin::BaseController < ApplicationController
   end
 
   def accounts
-    {
-      "nico"  => Rails.application.credentials.dig(:admin, :nico_password),
-      "emile" => Rails.application.credentials.dig(:admin, :emile_password),
-      "gael" => Rails.application.credentials.dig(:admin, :gael_password)
-    }
+    user = ENV["GBOOLDER_ADMIN_USER"]
+    pass = ENV["GBOOLDER_ADMIN_PASSWORD"]
+    return {} if user.blank? || pass.blank?
+
+    { user => pass }
   end
 
   # used by audited gem (see config/initializers/audited.rb)

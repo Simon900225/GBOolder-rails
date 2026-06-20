@@ -1,4 +1,4 @@
 class ApplicationMailer < ActionMailer::Base
-  default from: "Boolder <hello@boolder.com>"
+  default from: Gboolder::MAIL_FROM
   layout "mailer"
 end

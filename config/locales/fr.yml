@@ -1,4 +1,6 @@
 fr:
+  gboolder:
+    region_name: Göteborg
   circuit:
     name:
       white_for_kids: Blanc (enfant)
@@ -46,43 +48,43 @@ fr:
   views:
     homepage:
       title1: Escaladez
-      title2: à Fontainebleau
-      subtitle: Découvrez des milliers de blocs et circuits pour tous les niveaux.
+      title2: sur la côte ouest suédoise
+      subtitle: Découvrez des milliers de blocs pour tous les niveaux autour de Göteborg.
       see_map: Voir la carte
       read_guide: Lire le guide du débutant
       popular_areas: Secteurs populaires
       all_areas: Voir tous les secteurs
       promoted:
         circuit7a:
-          title: Bleau dans la Peau
-          subtitle: Découvrez l'impossible circuit des 100 7a réalisé par Seb Berthe et Hugo Parmentier.
-          cta: Voir le circuit
+          title: Explorer les secteurs
+          subtitle: Parcourez les secteurs d'escalade autour de Göteborg et de la côte ouest.
+          cta: Voir tous les secteurs
         app:
-          title: Découvrez l'appli Boolder
-          subtitle: Le compagnon idéal pour vos sorties à Fontainebleau, disponible sur iPhone et Android.
+          title: Découvrez l'appli GBOolder
+          subtitle: Le compagnon idéal pour vos sorties autour de Göteborg — bientôt sur iPhone et Android.
           cta: En savoir plus
         beginners_guide:
           title: Le guide pour bien débuter
           subtitle: Découvrez le matériel nécesaire, les conseils pour grimper en sécurité, et les règles à respecter en forêt.
           cta: Lire le guide
         about:
-          title: À propos de Boolder
-          subtitle: En savoir plus sur l'équipe Boolder et comment contribuer au projet.
+          title: À propos de GBOolder
+          subtitle: En savoir plus sur le projet et comment contribuer.
           cta: En savoir plus
       metas:
-        title: Escalade de blocs à Fontainebleau
-        description: Découvrez des milliers de blocs et circuits pour tous les niveaux.
+        title: Escalade de blocs autour de Göteborg
+        description: Découvrez des milliers de blocs pour tous les niveaux sur la côte ouest suédoise.
     mapping:
       see_on_map: Voir sur la carte
       areas:
         index:
           title: Cartographier
-          subtitle: Pour nous aider à améliorer Boolder, rendez-vous sur un secteur et prenez en photo les blocs manquants avec votre téléphone.
+          subtitle: Pour nous aider à améliorer GBOolder, rendez-vous sur un secteur et prenez en photo les blocs manquants avec votre téléphone.
           core_mapping_team: Vous souhaitez nous aider à cartographier de nouveaux secteurs ? 
           core_mapping_team_email_html: Envoyez-nous un email à %{link}, nous serons ravis de discuter !
           metas: 
             title: Cartographier
-            description: Aidez Boolder à cartographier toutes les voies de bloc à Fontainebleau
+            description: Aidez GBOolder à cartographier toutes les voies de bloc autour de Göteborg
       problems:
         index:
           title: Voies à cartographier à %{area}
@@ -113,7 +115,7 @@ fr:
           how_to: Lire le mode d'emploi
           warning_horizontal_html: 'Important : les photos doivent être <span class=" underline">horizontales</span>.'
           problem: Voie
-          problem_url_label: Lien (bleau.info ou Boolder)
+          problem_url_label: Lien (GBO ou GBOolder)
           boulder: Photo du bloc
           boulder_description: Prenez une photo du bloc avec votre téléphone.
           line: Ligne de la voie
@@ -132,8 +134,8 @@ fr:
             title: Nouvelle contribution
       map:
         metas:
-          title: Contribuez à Boolder
-          description: Aidez nous à cartographier les voies manquantes sur Boolder
+          title: Contribuez à GBOolder
+          description: Aidez nous à cartographier les voies manquantes autour de Göteborg
     reports:
       new:
         title: Signaler une erreur
@@ -143,14 +145,14 @@ fr:
         metas:
           title: Signaler une erreur
     map:
-      fontainebleau:
+      gothenburg:
         metas:
-          title: Carte topo Fontainebleau
-          description: Carte interactive pour l'escalade à Fontainebleau
+          title: Carte topo Göteborg
+          description: Carte interactive pour l'escalade autour de Göteborg et la côte ouest
       area:
         metas:
           title: Carte topo %{area}
-          description: Carte interactive pour le secteur d'escalade %{area} à Fontainebleau
+          description: Carte interactive pour le secteur d'escalade %{area}
       filters:
         label: Filtres
         level: Niveau
@@ -167,8 +169,8 @@ fr:
         apply: Appliquer
         clear: Effacer
     app_landing:
-      title: Tout Fontainebleau dans votre poche
-      subtitle: "Le meilleur topo pour l'escalade de bloc à Bleau"
+      title: Bouldering göteborgais dans votre poche
+      subtitle: "Le guide communautaire pour Göteborg et la côte ouest"
       android_announcement: Nous recherchons un·e développeur·se Android
       selling_points:
         map:
@@ -184,13 +186,13 @@ fr:
           title: Mode hors-ligne
           subtitle: L'appli fonctionne sans connectivité
       metas:
-        title: Tout Fontainebleau dans votre poche
-        description: Le topo d'escalade pour Fontainebleau qui tient dans votre poche
+        title: Bouldering göteborgais dans votre poche
+        description: Le guide d'escalade pour Göteborg et la côte ouest
     privacy:
       metas:
         title: Confidentialité
     contribute:
-      title: Contribuer à Boolder
+      title: Contribuer à GBOolder
       mapping_title: Cartographier
       mapping_description: Rendez-vous sur un secteur et prenez en photo les blocs manquants avec votre téléphone.
       report_title: Signaler une erreur
@@ -201,63 +203,66 @@ fr:
         title: Contribuer
         description: Cartographiez des secteurs, prenez des blocs en photos, signalez des erreurs, ou contribuez au projet open source
     about:
+      site_name: GBOolder
       title_prefix: À propos de
       history:
         title: L'histoire
-        p1: "Boolder est né de la rencontre entre Romain, Cyril et Nicolas — deux passionnés de grimpe et un passionné de technologie — vivant à deux pas de l’un des plus beaux spots de bloc du monde : Fontainebleau."
-        p2: "Pour Nicolas c’est le coup de cœur. Ses deux amis lui font découvrir la magie de « Bleau » : les secteurs emblématiques, l’histoire de la forêt, le plaisir de grimper en pleine nature, ainsi que les bonnes pratiques à respecter (nettoie tes chaussons !)."
-        p3: "La richesse de la forêt reste cependant intimidante : plus de 200 secteurs, plusieurs dizaines de milliers de blocs, et des centaines de circuits pour tous les niveaux. Comment s’y retrouver ?"
-        p4: Nicolas décide alors de cartographier la forêt avec minutie pendant près de 2 ans, et de créer un topo nouvelle génération. En 2023, Boolder est lancé gratuitement sur iPhone et Android.
-        podcast: "En savoir plus : interview de Nicolas sur le podcast \"Allez\""
+        p1: "GBOolder est un guide d'escalade de bloc communautaire pour Göteborg et la côte ouest suédoise, fork du projet open source Boolder."
+        p2: "Nous partons de la base de données maintenue par GBO (Bouldering Göteborg & Västkusten) et visons à améliorer la précision GPS, les contours de blocs et les topos grâce à la communauté."
+        p3: "Le code et le workflow de cartographie viennent de Boolder — une plateforme moderne pour cartes interactives, photos topo et contributions."
+        p4: ""
+        podcast: ""
       project:
         title: Le projet
         contact: contacter
-        p1: Boolder est un projet à but non lucratif, géré par des bénévoles.
-        p2_html: Notre but est de faciliter la découverte de l’escalade de bloc à Fontainebleau de façon <strong>ludique</strong> et dans le <strong>respect de la forêt</strong>.
-        p3_html: Le projet étant tout jeune, nous sommes à l’écoute de suggestions et d'idées pour favoriser l'entraide avec la communauté. N'hésitez pas à nous %{link} !
+        p1: GBOolder est un projet communautaire basé sur des logiciels open source.
+        p2_html: Notre but est de faciliter la découverte de l'escalade de bloc autour de Göteborg de façon <strong>ludique</strong>, <strong>précise</strong> et dans le <strong>respect de la nature</strong>.
+        p3_html: Nous accueillons les suggestions et contributions de la communauté locale. N'hésitez pas à nous %{link} !
       team:
-        title: L'équipe
-        nico_desc: Dev, cartographie
-        romain_desc: Grimpe
-        cyril_desc: Grimpe
-        emile_desc: Cartographie
+        title: La communauté
+        community_desc: GBOolder est maintenu par des bénévoles. Envie d'aider avec la cartographie, le code ou les données ? Consultez la page contribuer.
+      data:
+        title: Données et licence
+        p1_html: Les noms de voies, cotations et données de secteurs initiales viennent de <a href="https://gbo.crimp.se/">GBO</a>, sous licence <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>.
+        p2: "Exemple d'attribution : Données de voies initialement de GBO, améliorées par la communauté GBOolder."
+        p3_html: Les données dérivées de GBOolder et les contributions communautaires utilisent la même licence NC-SA. Le code est forké de <a href="https://github.com/boolder-org/boolder-rails">Boolder</a> — voir les licences upstream pour le code.
       contact:
         title: Contact
-        p1: Pour toute question, vous pouvez nous contacter à l'adresse 
+        p1: Pour toute question, vous pouvez nous contacter à l'adresse
       support:
         title: Remerciements
-        p1: "Nous remercions toutes les personnes qui ont contribué à l'écosystème de Bleau : les ouvreurs, les créateurs de circuits (ou \"peintres en piste\"), toutes les personnes ayant contribué à la maintenance et au nettoyage de blocs, aux opérations anti-érosion, ..."
-        p2_html: Nous remercions %{link_bleau} qui centralise et référence des dizaines de milliers de blocs avec minutie et passion depuis plus de 20 ans, de façon gratuite. Vous pouvez les soutenir sur leur page %{link_bleau_sponsoring}.
-        p3_html: Nous remercions également l'association %{link_cosiroc} et le site %{link_topo_bleau}, à l'origine de nombreuses données de première main et d'opérations sur le terrain.
+        p1: "Merci à GBO pour la base de données originale de Göteborg, et à l'équipe Boolder pour la plateforme open source sur laquelle ce projet s'appuie."
+        p2_html: Merci à %{link_gbo} pour les données de voies et au projet %{link_boolder} pour l'architecture de l'application.
+        p3_html: ""
         app: appli
       open:
         title: Une plateforme collaborative
-        p1_html: Le code des applis ainsi que les données sont disponibles en open source sur %{link}.
-        p2_html: Il est également possible de %{link} en cartographiant les voies manquantes ou en signalant des erreurs.
+        p1_html: Le code est disponible en open source sur %{link}.
+        p2_html: Il est également possible de %{link} en cartographiant les voies manquantes, en améliorant le GPS ou en signalant des erreurs.
         contribute_link: contribuer
       web_dev:
         title: Vous savez coder ?
-        p1_html: Nous recherchons activement un·e développeur·se %{link_web} et %{link_ios}. Venez contribuer !
+        p1_html: Nous accueillons les contributions au code %{link_web}. Venez contribuer !
       faq:
         title: Questions fréquentes
         data:
           question: D'où viennent les données ?
-          p1: Les photos et données géographiques (GPS) ont été récoltées par l'équipe Boolder.  
-          p2_html: Les noms de voies et cotations viennent essentiellement de %{link_bleau}, %{link_cosiroc}, et %{link_topo_bleau}.
-          p3: Certains dessins de blocs (en vue de dessus) s'inspirent de topos existants. Nous travaillons à les remplacer par des dessins originaux.
+          p1: Les noms de voies et cotations viennent de GBO (gbo.crimp.se). Les coordonnées GPS et contours de blocs sont améliorés par la communauté GBOolder.
+          p2_html: Les données initiales viennent de %{link_gbo}. Les contributions communautaires affinent emplacements, topos et polygones de blocs.
+          p3: Les données GBOolder sont sous licence CC BY-NC-SA 4.0 — comme le jeu de données GBO source.
         why_free:
-          question: Pourquoi l'appli est-elle gratuite ?
-          p1: Car nous voulons que le plus grand nombre puisse en profiter ! 
-          p2: Nicolas a profité d'une année sabbatique pour cartographier de nombreux secteurs et coder la première version de l'application. Grâce à cela, très peu de frais ont été engagés. Nous comptons rester dans cette dynamique dans le futur en reposant sur un modèle de bénévolat open source.
+          question: Pourquoi est-ce gratuit ?
+          p1: Parce que nous voulons que le plus grand nombre puisse profiter de l'escalade autour de Göteborg !
+          p2: GBOolder est un projet communautaire bénévole basé sur des logiciels open source.
         privacy:
           question: Quelles données personnelles récoltez-vous ?
           p1_html: Vous pouvez consulter notre %{link}.
           policy: politique de confidentialité
       metas:
-        title: À propos de Boolder
+        title: À propos de GBOolder
     areas:
       index:
-        title: Fontainebleau
+        title: Göteborg
         sort_by:
           label: Trier par
           problems: Nombre de voies
@@ -276,15 +281,15 @@ fr:
           dry_fast: Sèche Vite
           train_html: Accessible <br>en train + vélo
         metas:
-          title: Tous les secteurs à Fontainebleau
-          description: Découvrez les meilleurs secteurs pour grimper à Fontainebleau, le meilleur spot d'escalade de bloc en France.
+          title: Tous les secteurs autour de Göteborg
+          description: Découvrez les meilleurs secteurs pour grimper sur la côte ouest suédoise.
         map:
           see: "Voir"
       levels:
         beginner_friendly: Idéal pour débuter
         areas: Secteurs par niveaux
         metas:
-          title: Secteurs par niveau à Fontainebleau
+          title: Secteurs par niveau autour de Göteborg
           description: Découvrez les secteurs débutants ainsi que les secteurs ayant des voies dans les niveaux 4, 5, 6, 7, 8.
       show:
         see_map: Voir sur la carte
@@ -300,8 +305,8 @@ fr:
         levels_chart:
           title: Nombre de voies par niveau
         metas:
-          title: "%{area}, Fontainebleau"
-          description: "Tout ce qu'il faut savoir pour grimper à %{area} à Fontainebleau : voies, circuits, carte topo, photos, accès, ..."
+          title: "%{area}, Göteborg"
+          description: "Tout ce qu'il faut savoir pour grimper à %{area} : voies, carte topo, photos, accès, ..."
       train_station: "Gare %{name}"
       train_station_generic: "Gare"
     circuits:
@@ -310,7 +315,7 @@ fr:
           title: Circuit %{circuit} à %{area}
       index:
         metas:
-          title: Tous les circuits à Fontainebleau
+          title: Tous les circuits autour de Göteborg
     circuit7a:
       title: Bleau dans la Peau
       subtitle_html: L'impossible circuit des 100 7a par Seb Berthe et Hugo Parmentier en 2023.
@@ -318,7 +323,7 @@ fr:
       see_movie: Voir le film
       metas:
         title: Bleau dans la Peau - Circuit 100 7a
-        description: L'impossible circuit des 100 7a à Fontainebleau réalisé par Seb Berthe et Hugo Parmentier en 2023.
+        description: L'impossible circuit des 100 7a à Göteborg réalisé par Seb Berthe et Hugo Parmentier en 2023.
     problems:
       show:
         see_circuit: Voir le circuit
@@ -328,7 +333,7 @@ fr:
           title: "%{problem} - %{grade} - %{area}"
       index:
         metas:
-          title: Voies populaires à Fontainebleau
+          title: Voies populaires autour de Göteborg
     search:
       placeholder: Nom de voie ou secteur
       clear: Effacer
@@ -345,6 +350,7 @@ fr:
         privacy: Confidentialité
         about: À propos
         contribute: Contribuer
+        attribution_html: 'Données de voies initialement de <a href="https://gbo.crimp.se/" class="underline hover:text-gray-700">GBO</a>, améliorées par la communauté GBOolder. <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="underline hover:text-gray-700">CC BY-NC-SA 4.0</a>'
     pagination:
       first: "Début"
       last: "Fin"
