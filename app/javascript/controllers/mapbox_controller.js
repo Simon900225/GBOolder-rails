@@ -31,7 +31,7 @@ export default class extends Controller {
       locale: this.localeValue == 'fr' ? this.getFrLocale() : undefined,
       hash: true,
       style: this.styleValue,
-      bounds: [[2.4806787, 48.2868427],[2.7698927,48.473906]], 
+      bounds: [[11.15, 57.35], [12.45, 57.85]], // Gothenburg / west Sweden (~57.6°N, 11.8°E)
       padding: 5,
     });
 
