@@ -14,6 +14,7 @@ namespace :dev do
     -t problems \
     -t boulders \
     -t circuits \
+    -t clusters \
     -t topos \
     -t lines \
     -t pois \

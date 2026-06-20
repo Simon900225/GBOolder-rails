@@ -39,9 +39,10 @@ class Problem < ApplicationRecord
   normalizes :name, :circuit_number, :circuit_letter, with: ->(s) { s.strip.presence }
 
   validates :steepness, inclusion: { in: STEEPNESS_VALUES }
-  validates :grade, inclusion: { in: GRADE_VALUES }, allow_blank: true
+  validates :grade, format: { with: Gbo::GradeNormalizer::GRADE_PATTERN }, allow_blank: true
   validates :landing, inclusion: { in: LANDING_VALUES }, allow_blank: true
   validates :bleau_info_id, uniqueness: true, allow_blank: true
+  validates :gbo_id, uniqueness: true, allow_nil: true
   validate :validate_circuit_letter
   validates :circuit_number, uniqueness: { scope: [ :circuit_letter, :circuit_id ] }, allow_nil: true
   validates :circuit_letter, uniqueness: { scope: [ :circuit_number, :circuit_id ] }, allow_nil: true

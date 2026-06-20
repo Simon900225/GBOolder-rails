@@ -78,13 +78,13 @@ Boolder already has contribution infrastructure, but it is **review-heavy and no
 
 | Piece | Replacement for GBOolder |
 |-------|--------------------------|
-| `bleau_areas` / `bleau_problems` + `bleau.rake` | Importer for [gbo.crimp.se](https://gbo.crimp.se/) |
-| `Area belongs_to :bleau_area` | Generalize or add `gbo_area` linkage |
+| `bleau_areas` / `bleau_problems` + `bleau.rake` | Legacy Font pipeline — replaced by `gbo.rake` |
+| `Area belongs_to :bleau_area` | Optional; GBO areas use `gbo_id` instead |
 | Map bounds / Mapbox style / tilesets (`nmondollot.*`) | Gothenburg bounds (~57.6°N, 11.8°E) and your own Mapbox assets |
 | `/fontainebleau` routes | `/gothenburg` or area-centric URLs |
-| Font grade validation (`1a`–`9c+`) | GBO grades (`4`, `5+`, `6C`, `7B`, `Projekt`, …) |
+| Font grade validation (`1a`–`9c+`) | GBO grades via `Gbo::GradeNormalizer` |
 | French/English i18n | Swedish + English (at minimum) |
-| `db/dump-prod.sql` | GBO seed data |
+| `db/dump-prod.sql` | GBO-imported seed data |
 
 ## Roadmap
 
@@ -109,12 +109,12 @@ Environment variables (see `.env.example`):
 
 ### Phase 2 — GBO data import
 
-- [ ] Explore GBO data access (API, export, or structured scrape — confirm with GBO maintainers)
-- [ ] Build `gbo.rake` importer: areas → sectors → problems (name, grade, ascents, GBO id)
-- [ ] Map GBO grades to internal grade field (extend `Problem::GRADE_VALUES` or use free-text + normalization)
-- [ ] Import existing GPS coordinates from GBO as initial `Problem#location` (expect inaccuracy)
-- [ ] Import photos where available (respect license and attribution)
-- [ ] Decouple `Area` from `bleau_area` (migration + model change)
+- [x] Explore GBO data access via [GBO-scraper](../GBO-scraper/)
+- [x] Build `gbo.rake` importer: areas → sectors → problems (name, grade, ascents, GBO id)
+- [x] Map GBO grades via `Gbo::GradeNormalizer` and relaxed validation
+- [x] Import existing GPS coordinates from GBO as initial `Problem#location`
+- [x] Import photos via `rake gbo:photos` (optional, unpublished topos)
+- [x] Decouple `Area` from `bleau_area` (nullable + `gbo_id` linkage)
 
 ### Phase 3 — Map infrastructure
 
@@ -179,14 +179,29 @@ rbenv install  # use version from .ruby-version
 ```bash
 cd GBOolder-rails
 bundle install
-createdb gboolder-dev
-# Until GBO import exists, you can use the Boolder sample dump:
-createdb dump-prod && psql -d dump-prod < db/dump-prod.sql
+createdb dump-prod
+psql -d dump-prod < db/dump-prod.sql
 rake db:migrate
 bin/dev
 ```
 
-> **Note:** `db/dump-prod.sql` is Fontainebleau data for development only. Production GBOolder will use GBO-imported data.
+The development database is named `dump-prod` (see `config/database.yml`). `db/dump-prod.sql` contains GBO-imported seed data (212 areas, ~4,300 problems).
+
+To refresh from scraper JSON:
+
+```bash
+# Scrape (see ../GBO-scraper/README.md), then:
+rake gbo:reset GBO_PUBLISH=1
+rake dev:dump   # regenerate db/dump-prod.sql
+```
+
+Optional: import reference photos from GBO (~40 min):
+
+```bash
+rake gbo:photos
+```
+
+> **Note:** `GBO_JSON` defaults to `../GBO-scraper/output/gbo.json`. Set `GBO_PUBLISH=1` so areas appear on the map.
 
 ### Map
 
