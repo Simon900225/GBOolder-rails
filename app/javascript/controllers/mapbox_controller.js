@@ -11,11 +11,14 @@ export default class extends Controller {
     "filterCounter", "filterIcon" 
   ]
   static values = { 
-    token: String,
+    style: String,
+    areasSource: String,
+    clustersSource: String,
+    problemsSource: String,
+    poisSource: String,
     bounds: Object,
     problem: Object,
     locale: { type: String, default: 'en' },
-    draft: { type: Boolean, default: false },
     contribute: { type: Boolean, default: false },
     contributeSource: String,
     circuit7a: { type: Boolean, default: false },
@@ -23,14 +26,11 @@ export default class extends Controller {
   }
 
   connect() {
-    mapboxgl.accessToken = this.tokenValue;
-
-    this.map = new mapboxgl.Map({
+    this.map = new maplibregl.Map({
       container: 'map',
-      language: this.localeValue, // doesn't seem to work?
-      locale: this.localeValue == 'fr' ? this.getFrLocale() : null,
+      locale: this.localeValue == 'fr' ? this.getFrLocale() : undefined,
       hash: true,
-      style: `mapbox://styles/nmondollot/cl95n147u003k15qry7pvfmq2${this.draftValue ? "/draft" : ""}`,
+      style: this.styleValue,
       bounds: [[2.4806787, 48.2868427],[2.7698927,48.473906]], 
       padding: 5,
     });
@@ -59,18 +59,18 @@ export default class extends Controller {
 
   addControls() {
     this.map.addControl(
-      new mapboxgl.ScaleControl({
+      new maplibregl.ScaleControl({
         maxWidth: 100,
         unit: 'metric'
        })
     );
 
     this.map.addControl(
-      new mapboxgl.NavigationControl()
+      new maplibregl.NavigationControl()
     );
 
     this.map.addControl(
-      new mapboxgl.GeolocateControl({
+      new maplibregl.GeolocateControl({
         positionOptions: {
           enableHighAccuracy: true
         },
@@ -81,19 +81,128 @@ export default class extends Controller {
   }
 
   addLayers() {
+    this.map.addSource('pois', {
+      type: 'geojson',
+      data: this.poisSourceValue,
+    });
+
     this.map.addSource('problems', {
-      type: 'vector',
-      url: 'mapbox://nmondollot.4xsv235p',
-      promoteId: "id"
+      type: 'geojson',
+      data: this.problemsSourceValue,
+      promoteId: 'id',
+    });
+
+    this.map.addSource('areas', {
+      type: 'geojson',
+      data: this.areasSourceValue,
+    });
+
+    this.map.addSource('clusters', {
+      type: 'geojson',
+      data: this.clustersSourceValue,
     });
 
     this.map.addLayer({
-      'id': 'problems',
-      'type': 'circle',
-      'source': 'problems',
-      'source-layer': 'problems-ayes3a',
-      'minzoom': 15,
-      'layout': {
+      id: 'pois',
+      type: 'symbol',
+      source: 'pois',
+      filter: ['==', ['geometry-type'], 'Point'],
+      layout: {
+        'text-field': ['to-string', ['get', 'name']],
+        'text-anchor': 'top',
+        'text-offset': [0, 1.5],
+        'text-optional': true,
+        'text-size': 10,
+      },
+      paint: {
+        'text-color': '#285ea8',
+        'text-halo-color': 'hsl(0, 0%, 100%)',
+        'text-halo-width': 1,
+        'text-opacity': [
+          'step',
+          ['zoom'],
+          0,
+          11,
+          0,
+          11.5,
+          ['match', ['get', 'type'], ['', 'trainstation'], 1, 0],
+          14,
+          1
+        ],
+      },
+    });
+
+    this.map.addLayer({
+      id: 'boulders',
+      type: 'fill',
+      source: 'problems',
+      filter: ['==', ['geometry-type'], 'Polygon'],
+      paint: {
+        'fill-color': 'hsl(0, 0%, 80%)',
+        'fill-outline-color': 'hsla(0, 0%, 70%, 0)',
+      },
+    });
+
+    this.map.addLayer({
+      id: 'areas-hulls',
+      type: 'fill',
+      source: 'areas',
+      filter: ['==', ['geometry-type'], 'Polygon'],
+      paint: {
+        'fill-color': [
+          'interpolate', ['linear'], ['zoom'],
+          11, '#b3b3b3',
+          13, 'hsl(0, 0%, 80%)'
+        ],
+        'fill-opacity': [
+          'interpolate', ['linear'], ['zoom'],
+          0, 1,
+          13, 1,
+          15, 0
+        ],
+        'fill-outline-color': [
+          'interpolate', ['linear'], ['zoom'],
+          11, '#b3b3b3',
+          13, 'hsl(0, 0%, 80%)'
+        ],
+      },
+    });
+
+    this.map.addLayer({
+      id: 'areas-hulls-outline',
+      type: 'line',
+      source: 'areas',
+      filter: ['==', ['geometry-type'], 'Polygon'],
+      layout: {
+        'line-join': 'round',
+      },
+      paint: {
+        'line-color': [
+          'interpolate', ['linear'], ['zoom'],
+          11, '#b3b3b3',
+          13, 'hsl(0, 0%, 80%)'
+        ],
+        'line-opacity': [
+          'interpolate', ['linear'], ['zoom'],
+          0, 1,
+          12, 1,
+          13, 0,
+          14, 0
+        ],
+        'line-width': [
+          'interpolate', ['linear'], ['zoom'],
+          10, 5,
+          14, 0
+        ],
+      },
+    });
+
+    this.map.addLayer({
+      id: 'problems',
+      type: 'circle',
+      source: 'problems',
+      minzoom: 15,
+      layout: {
         'visibility': 'visible',
         'circle-sort-key': 
           [
@@ -103,7 +212,7 @@ export default class extends Controller {
             1
           ]
       },
-      'paint': {
+      paint: {
         'circle-radius': 
           [
             "interpolate",
@@ -122,92 +231,7 @@ export default class extends Controller {
             ]
           ]
         ,
-        'circle-color':  // FIXME: make it DRY  
-          [
-            "case",
-            [
-              "match",
-              ["get", "circuitColor"],
-              ["", "yellow"],
-              true,
-              false
-            ],
-            "#FFCC02",
-            [
-              "match",
-              ["get", "circuitColor"],
-              ["", "purple"],
-              true,
-              false
-            ],
-            "#D783FF",
-            [
-              "match",
-              ["get", "circuitColor"],
-              ["", "orange"],
-              true,
-              false
-            ],
-            "#FF9500",
-            [
-              "match",
-              ["get", "circuitColor"],
-              ["", "green"],
-              true,
-              false
-            ],
-            "#77C344",
-            [
-              "match",
-              ["get", "circuitColor"],
-              ["", "blue"],
-              true,
-              false
-            ],
-            "#017AFF",
-            [
-              "match",
-              ["get", "circuitColor"],
-              ["", "skyblue"],
-              true,
-              false
-            ],
-            "#5AC7FA",
-            [
-              "match",
-              ["get", "circuitColor"],
-              ["", "salmon"],
-              true,
-              false
-            ],
-            "#FDAF8A",
-            [
-              "match",
-              ["get", "circuitColor"],
-              ["", "red"],
-              true,
-              false
-            ],
-            "#FF3B2F",
-            [
-              "match",
-              ["get", "circuitColor"],
-              ["", "black"],
-              true,
-              false
-            ],
-            "#000",
-            [
-              "match",
-              ["get", "circuitColor"],
-              ["", "white"],
-              true,
-              false
-            ],
-            "#FFFFFF",
-            "#878A8D"
-          ]
-        ,
+        'circle-color': this.circuitColorExpression(),
         'circle-opacity': 
         [
           "interpolate",
@@ -219,25 +243,15 @@ export default class extends Controller {
           1
         ]
       },
-      filter: [
-        "match",
-          ["geometry-type"],
-          ["Point"],
-          true,
-          false
-      ],
-    }
-    ,
-    "areas" // layer will be inserted just before this layer
-    );
+      filter: ['==', ['geometry-type'], 'Point'],
+    });
 
     this.map.addLayer({
-      'id': 'problems-texts',
-      'type': 'symbol',
-      'source': 'problems',
-      'source-layer': 'problems-ayes3a',
-      'minzoom': 19,
-      'layout': {
+      id: 'problems-texts',
+      type: 'symbol',
+      source: 'problems',
+      minzoom: 19,
+      layout: {
         'visibility': 'visible',
         'text-allow-overlap': true,
         'text-field': [
@@ -254,7 +268,7 @@ export default class extends Controller {
           20
         ],
       },
-      'paint': {
+      paint: {
         'text-color': 
           [
             "case",
@@ -270,13 +284,81 @@ export default class extends Controller {
           ]
         ,
       },
-      filter: [
-        "match",
-          ["geometry-type"],
-          ["Point"],
-          true,
-          false
-      ],
+      filter: ['==', ['geometry-type'], 'Point'],
+    });
+
+    this.map.addLayer({
+      id: 'areas',
+      type: 'symbol',
+      source: 'areas',
+      filter: ['==', ['geometry-type'], 'Point'],
+      layout: {
+        'text-field': ['to-string', ['get', 'name']],
+        'text-max-width': 5,
+        'text-size': [
+          'interpolate', ['linear'], ['zoom'],
+          12, 12,
+          15, 18
+        ],
+        'text-radial-offset': 0.1,
+        'text-variable-anchor': ['center', 'bottom', 'top'],
+        'text-allow-overlap': true,
+        'text-optional': true,
+        'symbol-sort-key': [
+          'step', ['get', 'priority'],
+          1,
+          2, 2,
+          3, 3
+        ],
+      },
+      paint: {
+        'text-color': '#333',
+        'text-halo-color': 'hsl(0, 4%, 100%)',
+        'text-halo-width': [
+          'interpolate', ['linear'], ['zoom'],
+          12, 1,
+          15, 2
+        ],
+        'text-opacity': [
+          'interpolate', ['linear'], ['zoom'],
+          14.5, 1,
+          15, 0
+        ],
+      },
+    });
+
+    this.map.addLayer({
+      id: 'clusters-hulls',
+      type: 'fill',
+      source: 'clusters',
+      filter: ['==', ['geometry-type'], 'Polygon'],
+      paint: {
+        'fill-color': 'hsl(0, 0%, 35%)',
+        'fill-opacity': 0,
+        'fill-outline-color': 'hsla(0, 0%, 0%, 0)',
+      },
+    });
+
+    this.map.addLayer({
+      id: 'clusters',
+      type: 'symbol',
+      source: 'clusters',
+      maxzoom: 12,
+      filter: ['==', ['geometry-type'], 'Point'],
+      layout: {
+        'text-field': ['to-string', ['get', 'name']],
+        'text-max-width': 6,
+        'text-size': 20,
+        'text-radial-offset': 0.2,
+        'text-variable-anchor': ['center', 'bottom', 'top'],
+        'text-allow-overlap': true,
+        'text-padding': 10,
+      },
+      paint: {
+        'text-color': '#333',
+        'text-halo-color': 'hsl(0, 0%, 100%)',
+        'text-halo-width': 2,
+      },
     });
 
     // CONTRIBUTE LAYERS
@@ -470,30 +552,25 @@ export default class extends Controller {
       ],
       });
 
-      this.map.addSource('circuit7a-bike', {
-        type: 'vector',
-        url: 'mapbox://nmondollot.c2qwxo24',
-        promoteId: "id"
-      });
-
-      this.map.addLayer({
-      'id': 'circuit7a-bike',
-      'type': 'line',
-      'source': 'circuit7a-bike',
-      'source-layer': 'top7a-bike-2kosot',
-      // 'minzoom': 8,
-      'layout': {
-        'visibility': 'visible',
-      },
-      'paint': {
-        'line-color': "#FFDC36",
-        'line-width': 4,
-      },
-      }
-      ,
-      "areas" // layer will be inserted just before this layer
-      );
     }
+  }
+
+  circuitColorExpression() {
+    // FIXME: make it DRY (see Problem::GRADE_VALUES / problems_helper)
+    return [
+      "case",
+      ["match", ["get", "circuitColor"], ["", "yellow"], true, false], "#FFCC02",
+      ["match", ["get", "circuitColor"], ["", "purple"], true, false], "#D783FF",
+      ["match", ["get", "circuitColor"], ["", "orange"], true, false], "#FF9500",
+      ["match", ["get", "circuitColor"], ["", "green"], true, false], "#77C344",
+      ["match", ["get", "circuitColor"], ["", "blue"], true, false], "#017AFF",
+      ["match", ["get", "circuitColor"], ["", "skyblue"], true, false], "#5AC7FA",
+      ["match", ["get", "circuitColor"], ["", "salmon"], true, false], "#FDAF8A",
+      ["match", ["get", "circuitColor"], ["", "red"], true, false], "#FF3B2F",
+      ["match", ["get", "circuitColor"], ["", "black"], true, false], "#000",
+      ["match", ["get", "circuitColor"], ["", "white"], true, false], "#FFFFFF",
+      "#878A8D"
+    ]
   }
 
   centerMap() {
@@ -523,7 +600,7 @@ export default class extends Controller {
         const html = `<a href="/${this.localeValue}/redirects/new?problem_id=${problem.id}" target="_blank">${name || ""}</a><span class="text-gray-400 ml-1">${problem.grade}</span>`;
            
         // will be displayed thanks to the 'moveend' event code above
-        this.popup = new mapboxgl.Popup({closeButton:false, focusAfterOpen: false, offset: [0, -8]}) 
+        this.popup = new maplibregl.Popup({closeButton:false, focusAfterOpen: false, offset: [0, -8]}) 
           .setLngLat(coordinates)
           .setHTML(html)
       }
@@ -572,7 +649,7 @@ export default class extends Controller {
         }        
         const html = `<a href="/${this.localeValue}/redirects/new?problem_id=${problem.id})" target="_blank">${name || ""}</a><span class="text-gray-400 ml-1">${problem.grade}</span>`;
          
-        new mapboxgl.Popup({closeButton:false, focusAfterOpen: false, offset: [0, -8]})
+        new maplibregl.Popup({closeButton:false, focusAfterOpen: false, offset: [0, -8]})
         .setLngLat(coordinates)
         .setHTML(html)
         .addTo(this.map);
@@ -607,7 +684,7 @@ export default class extends Controller {
         </div>`
       ).join("");
        
-      new mapboxgl.Popup({closeButton:false, focusAfterOpen: false, offset: [0, -8]})
+      new maplibregl.Popup({closeButton:false, focusAfterOpen: false, offset: [0, -8]})
       .setLngLat(coordinates)
       .setHTML(html)
       .addTo(this.map);
@@ -633,7 +710,7 @@ export default class extends Controller {
       }        
       const html = `<a href="/${this.localeValue}/redirects/new?problem_id=${problem.id})" target="_blank">${name || ""}</a><span class="text-gray-400 ml-1">${problem.grade}</span>`;
        
-      new mapboxgl.Popup({closeButton:false, focusAfterOpen: false, offset: [0, -8]})
+      new maplibregl.Popup({closeButton:false, focusAfterOpen: false, offset: [0, -8]})
       .setLngLat(coordinates)
       .setHTML(html)
       .addTo(this.map);
@@ -658,7 +735,7 @@ export default class extends Controller {
         const coordinates = e.features[0].geometry.coordinates.slice();
         const html = `<a href="${e.features[0].properties.googleUrl}" target="_blank">${this.localeValue == 'fr' ? 'Voir sur Google' : 'See on Google'}</a>`;
          
-        new mapboxgl.Popup({closeButton:false, focusAfterOpen: false, offset: [0, -8]})
+        new maplibregl.Popup({closeButton:false, focusAfterOpen: false, offset: [0, -8]})
         .setLngLat(coordinates)
         .setHTML(html)
         .addTo(this.map);
@@ -749,7 +826,7 @@ export default class extends Controller {
       'FullscreenControl.Exit': 'Sortir du mode plein écran',
       'GeolocateControl.FindMyLocation': 'Trouver ma position',
       'GeolocateControl.LocationNotAvailable': 'Localisation non disponible',
-      'LogoControl.Title': 'Logo Mapbox',
+      'LogoControl.Title': 'MapLibre',
       'Map.Title': 'Carte',
       'NavigationControl.ResetBearing': 'Remettre au Nord',
       'NavigationControl.ZoomIn': 'Zoomer',
@@ -865,7 +942,7 @@ export default class extends Controller {
     const coordinates = [event.detail.lon, event.detail.lat];
     const html = `<a href="/${this.localeValue}/redirects/new?problem_id=${event.detail.id}" target="_blank">${event.detail.name || ""}</a><span class="text-gray-400 ml-1">${event.detail.grade}</span>`;
      
-    new mapboxgl.Popup({closeButton:false, focusAfterOpen: false, offset: [0, -8]}) 
+    new maplibregl.Popup({closeButton:false, focusAfterOpen: false, offset: [0, -8]}) 
     .setLngLat(coordinates)
     .setHTML(html)
     .addTo(this.map);

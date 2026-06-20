@@ -21,7 +21,7 @@ When publishing GBOolder data or derivatives, attribute GBO and keep the same NC
 - PostgreSQL + PostGIS
 - Tailwind CSS
 - [Stimulus](https://stimulus.hotwired.dev) and [Turbo](https://turbo.hotwired.dev)
-- Mapbox GL JS (map tiles and vector layers)
+- MapLibre GL JS + [OpenFreeMap](https://openfreemap.org/) basemap
 
 ## What already exists (from Boolder)
 
@@ -188,12 +188,11 @@ bin/dev
 
 > **Note:** `db/dump-prod.sql` is Fontainebleau data for development only. Production GBOolder will use GBO-imported data.
 
-### Mapbox
+### Map
 
-1. Create an account at [mapbox.com](https://www.mapbox.com)
-2. Create a public token with default public scopes
-3. Copy `.env.example` to `.env` and set `MAPBOX_DEV_ACCESS_KEY`
-4. Eventually replace style/tileset URLs in `app/javascript/controllers/mapbox_controller.js` with your own Gothenburg assets
+The web map uses [OpenFreeMap](https://openfreemap.org/) for the basemap (via [MapLibre GL JS](https://maplibre.org/)) — no API key required. Climbing data (areas, problems, boulders) is served as GeoJSON from the Rails app.
+
+Optional: set `MAP_STYLE_URL` in `.env` to use a different OpenFreeMap style (e.g. `https://tiles.openfreemap.org/styles/bright`).
 
 ### JOSM (boulder drawing)
 

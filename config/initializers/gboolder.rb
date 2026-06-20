@@ -6,4 +6,5 @@ module Gboolder
   HOST = ENV.fetch("GBOOLDER_HOST", "www.gboolder.example")
   ASSET_HOST = ENV.fetch("GBOOLDER_ASSET_HOST", "assets.gboolder.example")
   PLAUSIBLE_DOMAIN = ENV["PLAUSIBLE_DOMAIN"].presence
+  MAP_STYLE_URL = ENV.fetch("MAP_STYLE_URL", "https://tiles.openfreemap.org/styles/liberty")
 end

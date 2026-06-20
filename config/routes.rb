@@ -88,6 +88,13 @@ Rails.application.routes.draw do
       }
     end
 
+    scope "map/data", module: :map, as: :map_data do
+      get "areas", to: "geojson#areas", defaults: { format: :geojson }
+      get "clusters", to: "geojson#clusters", defaults: { format: :geojson }
+      get "problems", to: "geojson#problems", defaults: { format: :geojson }
+      get "pois", to: "geojson#pois", defaults: { format: :geojson }
+    end
+
     get "map(/:slug)", to: "map#index", as: :map
     get "app", to: "pages#app", as: :app
     get "privacy", to: "pages#privacy", as: :privacy
