@@ -1,0 +1,23 @@
+<div class="max-w-7xl mx-auto pt-6 sm:px-6 lg:px-8 pb-8">
+  <div class="px-4 sm:px-0 mb-4">
+    <%= link_to mapping_editor_area_path(@area), class: "text-sm text-gray-500 hover:text-gray-700" do %>
+      &larr; Back to editor
+    <% end %>
+  </div>
+
+  <h1 class="text-2xl font-bold mb-2 px-4 sm:px-0"><%= @import.applied? ? "Changes applied" : "Preview changes" %></h1>
+  <p class="text-gray-600 mb-4 px-4 sm:px-0"><%= @area.name %></p>
+
+  <%= render "imports/preview",
+    import: @import,
+    updates: @updates,
+    apply_path: @import.applied? ? nil : mapping_apply_editor_import_path(@import, area_slug: @area.slug),
+    apply_method: :post %>
+
+  <% if @import.applied? %>
+    <p class="mt-4 px-4 sm:px-0">
+      <%= link_to "Continue editing", mapping_editor_area_path(@area), class: "btn" %>
+      <%= link_to "View on map", map_path(@area), class: "btn ml-2" %>
+    </p>
+  <% end %>
+</div>

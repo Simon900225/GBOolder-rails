@@ -1,5 +1,9 @@
 <h2 class="text-2xl font-bold mb-4 pt-4 px-4 sm:px-0">Mapping progress</h2>
 
+<p class="px-4 sm:px-0 mb-4">
+  <%= link_to "Open map editor", mapping_editor_path, class: "text-emerald-600 underline" %>
+</p>
+
 <%= form_with url: admin_mapping_path, method: :get, class: "my-4" do |form| %>
   <div class="w-1/2">
     <%# label for="missing" class="block text-sm font-medium text-gray-700" What's missing? %>

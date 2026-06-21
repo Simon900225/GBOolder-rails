@@ -65,10 +65,13 @@ Boolder already has contribution infrastructure, but it is **review-heavy and no
 
 ### Admin & mapping pipeline
 
+See **[docs/mapping.md](docs/mapping.md)** for a full guide: areas, sectors, boulders, the in-browser editor, and when rake tasks are needed.
+
 | Tool | Purpose |
 |------|---------|
-| **JOSM** + Fastdraw plugin | Draw boulder polygons and adjust problem GPS in GeoJSON |
-| **GeoJSON import** (`Import` model) | Upload edited GeoJSON; preview diff; apply to database |
+| **Mapping editor** (`/mapping/editor/:slug`) | Draw boulder polygons and adjust problem GPS in the browser |
+| **JOSM** + Fastdraw plugin | Alternative: edit exported GeoJSON offline |
+| **GeoJSON import** (`Import` model) | Preview diff; apply changes to database |
 | `rake josm_legacy:geojson` | Export area data for JOSM |
 | `rake mapbox:*` | Export GeoJSON for Mapbox tilesets |
 | `rake geo:compute` | Associate topos with boulders; order problems around polygon |

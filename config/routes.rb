@@ -61,6 +61,12 @@ Rails.application.routes.draw do
       resources :contributions, only: [ :show, :new, :create ]
       resources :requests, controller: "contribution_requests", only: [ :index ]
       get "map(/:slug)", to: "/map#index", as: :map, defaults: { contribute: true }
+      get "editor", to: "editor#index", as: :editor
+      get "editor/imports/:id", to: "editor#import_preview", as: :editor_import
+      post "editor/imports/:id/apply", to: "editor#apply", as: :apply_editor_import
+      get "editor/:slug/data", to: "editor#data", defaults: { format: :json }, as: :editor_data
+      post "editor/:slug/imports", to: "editor#create_import", as: :editor_area_imports
+      get "editor/:slug", to: "editor#show", as: :editor_area
       get "/", to: "areas#index"
     end
     get "contribute/map", to: redirect("/%{locale}/mapping/map"), as: :map_contribute_legacy_redirect # can be removed as soon as 2024-01-01

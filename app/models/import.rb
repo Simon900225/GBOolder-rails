@@ -2,18 +2,21 @@ class Import < ApplicationRecord
   has_one_attached :file
   has_associated_audits
 
+  attr_accessor :area_id_for_inference
+
   def applied?
     applied_at.present?
   end
 
   def objects_to_update
-    ImportParser.new(RGeo::GeoJSON.decode(file.download)).objects_to_update
+    ImportParser.new(RGeo::GeoJSON.decode(file.download), area_id: area_id_for_inference).objects_to_update
   end
 end
 
 class ImportParser
-  def initialize(features)
+  def initialize(features, area_id: nil)
     @features = features.to_a
+    @area_id_override = area_id
     @area_id = infer_area_id
     @objects = []
   end
@@ -78,6 +81,11 @@ class ImportParser
   private
 
   def infer_area_id
+    return @area_id_override if @area_id_override.present?
+
+    explicit = @features.filter_map { |feature| feature["areaId"] }.first
+    return explicit.to_i if explicit.present?
+
     problems = problem_features.map { |feature| Problem.find_by(id: feature["problemId"]) }
     boulders = boulder_features.map { |feature| Boulder.find_by(id: feature["boulderId"]) }
 

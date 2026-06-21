@@ -1,0 +1,46 @@
+<% set_meta_tags title: "Edit #{@area.name}" %>
+
+<div
+  data-controller="map-editor"
+  data-map-editor-data-url-value="<%= mapping_editor_data_path(@area) %>"
+  data-map-editor-save-url-value="<%= mapping_editor_area_imports_path(@area) %>"
+  data-map-editor-style-url-value="<%= Gboolder::MAP_STYLE_URL %>"
+  data-map-editor-area-name-value="<%= @area.name %>"
+  data-map-editor-area-id-value="<%= @area.id %>"
+  class="flex flex-col h-[calc(100vh-4rem)]"
+  tabindex="0"
+>
+  <div class="flex-none bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-3 flex-wrap">
+    <%= link_to mapping_editor_path, class: "text-sm text-gray-500 hover:text-gray-700" do %>
+      &larr; Areas
+    <% end %>
+    <span class="font-semibold text-gray-900"><%= @area.name %></span>
+
+    <div class="flex gap-1 ml-4">
+      <button type="button" class="btn text-sm" data-map-editor-target="modeButton" data-mode="select" data-action="map-editor#setMode">Select</button>
+      <button type="button" class="btn text-sm opacity-60" data-map-editor-target="modeButton" data-mode="add_boulder" data-action="map-editor#setMode">Add boulder</button>
+      <button type="button" class="btn text-sm opacity-60" data-map-editor-target="modeButton" data-mode="place_problems" data-action="map-editor#setMode">Place problems</button>
+    </div>
+
+    <button type="button" class="btn text-sm ml-auto" data-map-editor-target="saveButton" data-action="map-editor#save" disabled>Save</button>
+  </div>
+
+  <div class="flex flex-1 min-h-0">
+    <div class="flex-1 relative min-h-0" data-map-editor-target="mapContainer"></div>
+
+    <aside class="w-72 flex-none bg-white border-l border-gray-200 overflow-y-auto" data-map-editor-target="sidebar">
+      <div class="p-4 border-b border-gray-200 space-y-2">
+        <h2 class="text-sm font-semibold text-gray-900">Unplaced problems</h2>
+        <p class="text-xs text-gray-500">Switch to Place problems mode, then drag onto the map.</p>
+        <input
+          type="search"
+          placeholder="Search…"
+          class="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          data-map-editor-target="unplacedSearch"
+          data-action="input->map-editor#filterUnplacedList"
+        >
+      </div>
+      <ul class="divide-y divide-gray-100" data-map-editor-target="unplacedList"></ul>
+    </aside>
+  </div>
+</div>
