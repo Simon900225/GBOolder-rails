@@ -90,7 +90,31 @@ module Map
         hash[:updated_at] = boulder.updated_at
         hash.deep_transform_keys! { |key| key.camelize(:lower) }
 
-        factory.feature(boulder.polygon, nil, hash)
+        geometry = export_geometry(boulder.polygon)
+        factory.feature(geometry, nil, hash)
+      end
+    end
+
+    def export_geometry(polygon)
+      ring = polygon.exterior_ring.points
+      open = open_ring_points(ring)
+
+      if open.length <= 2
+        factory.line_string(open)
+      else
+        polygon
+      end
+    end
+
+    def open_ring_points(points)
+      return points if points.length < 2
+
+      first = points.first
+      last = points.last
+      if first.x == last.x && first.y == last.y
+        points[0...-1]
+      else
+        points
       end
     end
 

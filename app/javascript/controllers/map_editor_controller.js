@@ -1,5 +1,5 @@
 import { Controller } from '@hotwired/stimulus'
-import { PolygonEditor, squareAround, closeRing, openRing } from 'map_editor/polygon_editor'
+import { PolygonEditor, squareAround, lineAround, closeRing, openRing } from 'map_editor/polygon_editor'
 import { ProblemLayer } from 'map_editor/problem_layer'
 
 export default class extends Controller {
@@ -15,6 +15,7 @@ export default class extends Controller {
   connect() {
     this.mode = 'select'
     this.boulders = []
+    this.walls = []
     this.problems = []
     this.unplacedProblems = []
     this.nextTempId = 1
@@ -61,6 +62,7 @@ export default class extends Controller {
           this.problemLayer.updateMarker(problem)
         })
         this.refreshLayers()
+        this.refreshWallLayers()
         this.markDirty()
       },
     })
@@ -73,12 +75,14 @@ export default class extends Controller {
       this.setupLayers()
       this.problemLayer.loadProblems(this.problems)
       this.refreshLayers()
+      this.refreshWallLayers()
       this.renderUnplacedList()
       this.setMode({ currentTarget: this.modeButtonTargets.find((b) => b.dataset.mode === 'select') })
     })
 
     this.map.on('click', (event) => this.handleMapClick(event))
     this.setupBoulderDrag()
+    this.setupWallDrag()
     this.setupProblemDropZone()
     this.element.addEventListener('keydown', (event) => this.handleKeydown(event))
   }
@@ -88,8 +92,11 @@ export default class extends Controller {
 
     this.map.on('mousedown', (event) => {
       if (this.mode !== 'select' || event.originalEvent.button !== 0) return
+      if (event.originalEvent.target.closest('.map-editor-vertex')) return
 
       const lngLat = [event.lngLat.lng, event.lngLat.lat]
+      if (this.polygonEditor.isNearVertex(lngLat)) return
+
       const boulder = this.polygonEditor.hitTestBoulder(this.boulders, lngLat)
       if (!boulder) return
 
@@ -136,6 +143,63 @@ export default class extends Controller {
 
     this.map.on('mouseup', finishBoulderDrag)
     this.map.on('mouseleave', finishBoulderDrag)
+  }
+
+  setupWallDrag() {
+    this.pendingWallDrag = null
+
+    this.map.on('mousedown', (event) => {
+      if (this.mode !== 'select' || event.originalEvent.button !== 0) return
+      if (event.originalEvent.target.closest('.map-editor-vertex')) return
+
+      const lngLat = [event.lngLat.lng, event.lngLat.lat]
+      if (this.polygonEditor.isNearVertex(lngLat)) return
+
+      const wall = this.polygonEditor.hitTestWall(this.walls, lngLat)
+      if (!wall) return
+
+      this.pendingWallDrag = { wall, startPoint: event.point, startLngLat: lngLat }
+      this.map.dragPan.disable()
+    })
+
+    this.map.on('mousemove', (event) => {
+      if (!this.pendingWallDrag && !this.polygonEditor.draggingWall) return
+
+      if (this.pendingWallDrag) {
+        const dx = event.point.x - this.pendingWallDrag.startPoint.x
+        const dy = event.point.y - this.pendingWallDrag.startPoint.y
+        if (Math.hypot(dx, dy) < 4) return
+
+        this.polygonEditor.beginWallDrag(
+          this.pendingWallDrag.wall,
+          this.pendingWallDrag.startLngLat
+        )
+        this.pendingWallDrag = null
+        this.refreshWallLayers()
+      }
+
+      if (this.polygonEditor.updateWallDrag([event.lngLat.lng, event.lngLat.lat])) {
+        this.refreshWallLayers()
+      }
+    })
+
+    const finishWallDrag = () => {
+      if (this.pendingWallDrag) {
+        this.pendingWallDrag = null
+        this.map.dragPan.enable()
+        return
+      }
+
+      if (this.polygonEditor.draggingWall) {
+        this.polygonEditor.endWallDrag()
+        this.refreshWallLayers()
+      }
+
+      this.map.dragPan.enable()
+    }
+
+    this.map.on('mouseup', finishWallDrag)
+    this.map.on('mouseleave', finishWallDrag)
   }
 
   setupProblemDropZone() {
@@ -200,6 +264,14 @@ export default class extends Controller {
           originalCoordinates: JSON.parse(JSON.stringify(ring)),
           dirty: false,
         })
+      } else if (feature.geometry.type === 'LineString') {
+        this.walls.push({
+          boulderId: feature.properties.boulderId,
+          updatedAt: feature.properties.updatedAt,
+          coordinates: feature.geometry.coordinates.map((coord) => [...coord]),
+          originalCoordinates: JSON.parse(JSON.stringify(feature.geometry.coordinates)),
+          dirty: false,
+        })
       }
     })
   }
@@ -239,6 +311,31 @@ export default class extends Controller {
         'line-width': 2,
       },
     })
+
+    this.map.addSource('editor-walls', {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] },
+    })
+
+    this.map.addLayer({
+      id: 'editor-walls-line',
+      type: 'line',
+      source: 'editor-walls',
+      paint: {
+        'line-color': [
+          'case',
+          ['boolean', ['get', 'selected'], false],
+          'hsl(30, 70%, 40%)',
+          'hsl(30, 50%, 50%)',
+        ],
+        'line-width': [
+          'case',
+          ['boolean', ['get', 'selected'], false],
+          4,
+          3,
+        ],
+      },
+    })
   }
 
   refreshLayers() {
@@ -263,6 +360,28 @@ export default class extends Controller {
     })
   }
 
+  refreshWallLayers() {
+    if (!this.map?.getSource('editor-walls')) return
+
+    const selectedId = this.polygonEditor.selectedWall?.boulderId || this.polygonEditor.selectedWall?.tempId
+
+    const features = this.walls.map((wall) => ({
+      type: 'Feature',
+      properties: {
+        selected: (wall.boulderId || wall.tempId) === selectedId,
+      },
+      geometry: {
+        type: 'LineString',
+        coordinates: wall.coordinates,
+      },
+    }))
+
+    this.map.getSource('editor-walls').setData({
+      type: 'FeatureCollection',
+      features,
+    })
+  }
+
   setMode(event) {
     this.mode = event.currentTarget.dataset.mode
 
@@ -270,7 +389,8 @@ export default class extends Controller {
       button.classList.toggle('opacity-60', button.dataset.mode !== this.mode)
     })
 
-    this.map.getCanvas().style.cursor = this.mode === 'add_boulder' ? 'crosshair' : ''
+    this.map.getCanvas().style.cursor =
+      this.mode === 'add_boulder' || this.mode === 'add_wall' ? 'crosshair' : ''
     this.problemLayer.setDraggable(this.mode === 'place_problems' || this.mode === 'select')
 
     if (this.mode !== 'select') {
@@ -278,12 +398,19 @@ export default class extends Controller {
       this.refreshLayers()
     } else if (this.polygonEditor.selectedBoulder) {
       this.polygonEditor.selectBoulder(this.polygonEditor.selectedBoulder)
+    } else if (this.polygonEditor.selectedWall) {
+      this.polygonEditor.selectWall(this.polygonEditor.selectedWall)
     }
   }
 
   handleMapClick(event) {
     if (this.mode === 'add_boulder') {
       this.addBoulderAt(event.lngLat)
+      return
+    }
+
+    if (this.mode === 'add_wall') {
+      this.addWallAt(event.lngLat)
       return
     }
 
@@ -302,10 +429,18 @@ export default class extends Controller {
     if (boulder) {
       this.polygonEditor.selectBoulder(boulder)
       this.refreshLayers()
-    } else {
-      this.polygonEditor.clearVertexMarkers()
-      this.refreshLayers()
+      return
     }
+
+    const wall = this.polygonEditor.hitTestWall(this.walls, [event.lngLat.lng, event.lngLat.lat])
+    if (wall) {
+      this.polygonEditor.selectWall(wall)
+      this.refreshWallLayers()
+      return
+    }
+
+    this.polygonEditor.clearVertexMarkers()
+    this.refreshLayers()
   }
 
   addBoulderAt(lngLat) {
@@ -326,17 +461,48 @@ export default class extends Controller {
     this.refreshLayers()
   }
 
+  addWallAt(lngLat) {
+    const tempId = `new-${this.nextTempId++}`
+    const wall = {
+      tempId,
+      boulderId: null,
+      updatedAt: null,
+      coordinates: lineAround([lngLat.lng, lngLat.lat]),
+      originalCoordinates: null,
+      dirty: true,
+    }
+
+    this.walls.push(wall)
+    this.polygonEditor.selectWall(wall)
+    this.setMode({ currentTarget: this.modeButtonTargets.find((b) => b.dataset.mode === 'select') })
+    this.markDirty()
+    this.refreshWallLayers()
+  }
+
   handleKeydown(event) {
     if (event.key !== 'Delete' && event.key !== 'Backspace') return
-    if (this.mode !== 'select' || !this.polygonEditor.selectedBoulder) return
+    if (this.mode !== 'select') return
 
-    const selected = this.polygonEditor.selectedBoulder
-    if (selected.boulderId) return
+    if (this.polygonEditor.selectedBoulder) {
+      const selected = this.polygonEditor.selectedBoulder
+      if (selected.boulderId) return
 
-    this.boulders = this.boulders.filter((b) => b.tempId !== selected.tempId)
-    this.polygonEditor.clearVertexMarkers()
-    this.markDirty()
-    this.refreshLayers()
+      this.boulders = this.boulders.filter((b) => b.tempId !== selected.tempId)
+      this.polygonEditor.clearVertexMarkers()
+      this.markDirty()
+      this.refreshLayers()
+      return
+    }
+
+    if (this.polygonEditor.selectedWall) {
+      const selected = this.polygonEditor.selectedWall
+      if (selected.boulderId) return
+
+      this.walls = this.walls.filter((w) => w.tempId !== selected.tempId)
+      this.polygonEditor.clearVertexMarkers()
+      this.markDirty()
+      this.refreshWallLayers()
+    }
   }
 
   filterUnplacedList() {
@@ -409,6 +575,26 @@ export default class extends Controller {
         geometry: {
           type: 'Polygon',
           coordinates: [closeRing(boulder.coordinates)],
+        },
+        properties,
+      })
+    })
+
+    this.walls.forEach((wall) => {
+      if (!wall.dirty && wall.originalCoordinates &&
+          !this.coordinatesChanged(wall.coordinates, wall.originalCoordinates)) return
+
+      const properties = { areaId: this.areaId }
+      if (wall.boulderId) {
+        properties.boulderId = wall.boulderId
+        properties.updatedAt = wall.updatedAt
+      }
+
+      features.push({
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: wall.coordinates,
         },
         properties,
       })

@@ -3,6 +3,5 @@ module CheckConflicts
 
   included do
     attr_accessor :conflicting_updated_at
-    validates :conflicting_updated_at, absence: true
   end
 end

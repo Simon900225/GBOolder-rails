@@ -30,15 +30,11 @@ class Admin::ImportsController < Admin::BaseController
 
   def apply
     @import = Import.find(params[:id])
-
-    if @import.objects_to_update.any? { |object| object.conflicting_updated_at }
-      flash[:error] = "Cannot apply import when there is a conflict"
-      redirect_to admin_import_path(@import)
-      return
-    end
+    objects = @import.objects_to_update
+    conflict_count = objects.count(&:conflicting_updated_at)
 
     ActiveRecord::Base.transaction do
-      @import.objects_to_update.each do |object|
+      objects.each do |object|
         object.import = @import
         object.save!
       end
@@ -46,7 +42,11 @@ class Admin::ImportsController < Admin::BaseController
       @import.update!(applied_at: Time.now)
     end
 
-    flash[:success] = "Import successful"
+    if conflict_count > 0
+      flash[:notice] = "Import applied with #{conflict_count} conflict#{"s" unless conflict_count == 1} (records were overwritten)"
+    else
+      flash[:success] = "Import successful"
+    end
     redirect_to admin_import_path(@import)
   end
 

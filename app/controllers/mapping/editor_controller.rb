@@ -70,14 +70,11 @@ class Mapping::EditorController < ApplicationController
       return
     end
 
-    if @import.objects_to_update.any? { |object| object.conflicting_updated_at }
-      flash[:error] = "Cannot apply import when there is a conflict"
-      redirect_to mapping_editor_import_path(@import, area_slug: @area.slug)
-      return
-    end
+    objects = @import.objects_to_update
+    conflict_count = objects.count(&:conflicting_updated_at)
 
     ActiveRecord::Base.transaction do
-      @import.objects_to_update.each do |object|
+      objects.each do |object|
         object.import = @import
         object.save!
       end
@@ -85,7 +82,11 @@ class Mapping::EditorController < ApplicationController
       @import.update!(applied_at: Time.now)
     end
 
-    flash[:success] = "Changes applied. Run `rake geo:compute area_id=#{@area.id}` to update topo associations."
+    if conflict_count > 0
+      flash[:notice] = "Changes applied with #{conflict_count} conflict#{"s" unless conflict_count == 1} (records were overwritten). Run `rake geo:compute area_id=#{@area.id}` to update topo associations."
+    else
+      flash[:success] = "Changes applied. Run `rake geo:compute area_id=#{@area.id}` to update topo associations."
+    end
     redirect_to mapping_editor_import_path(@import, area_slug: @area.slug)
   end
 
