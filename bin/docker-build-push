@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# Build and push the GBOolder Rails Docker image to Docker Hub.
+#
+# Usage:
+#   bin/docker-build-push              # amd64 only, tag = git short hash
+#   bin/docker-build-push --with-arm64 # amd64 + arm64
+#   bin/docker-build-push -t v1.0.0    # custom version tag
+
+set -e
+
+IMAGE="simon900225/gboolder"
+PLATFORMS="linux/amd64"
+
+CUSTOM_TAG=""
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --with-arm64) PLATFORMS="linux/amd64,linux/arm64"; shift ;;
+        --tag|-t) CUSTOM_TAG="$2"; shift 2 ;;
+        *) echo "Unknown parameter: $1"; exit 1 ;;
+    esac
+done
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
+echo "🚀 Starting Docker image build and push process..."
+
+if ! docker buildx ls | grep -q "linux/amd64"; then
+    echo "📦 Setting up Docker buildx..."
+    docker buildx create --use
+fi
+
+GIT_HASH=$(git rev-parse --short HEAD)
+VERSION_TAG="${CUSTOM_TAG:-$GIT_HASH}"
+
+echo "🏗️  Building Docker image..."
+echo "   → Image: $IMAGE"
+echo "   → Building for $PLATFORMS"
+echo "   → Using tag: latest and $VERSION_TAG"
+
+docker buildx build \
+    --platform "$PLATFORMS" \
+    -t "$IMAGE:latest" \
+    -t "$IMAGE:$VERSION_TAG" \
+    --push \
+    .
+
+if [ $? -eq 0 ]; then
+    echo "✅ Successfully built and pushed images:"
+    echo "   → $IMAGE:latest"
+    echo "   → $IMAGE:$VERSION_TAG"
+    echo ""
+    echo "💡 To pull this specific version on your server, use:"
+    echo "   docker pull $IMAGE:$VERSION_TAG"
+    echo ""
+    echo "🔄 To deploy with Kamal, set in config/deploy.yml:"
+    echo "   image: $IMAGE"
+    echo "   then: bin/kamal deploy --version=$VERSION_TAG"
+else
+    echo "❌ Build or push failed"
+    exit 1
+fi

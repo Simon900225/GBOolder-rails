@@ -1,0 +1,75 @@
+name: gboolder
+
+services:
+  db:
+    image: postgis/postgis:16-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: boolder
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: boolder-production
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U boolder -d boolder-production"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  web:
+    image: ${GBOOLDER_IMAGE:-simon900225/gboolder:latest}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      RAILS_ENV: production
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY:?Set RAILS_MASTER_KEY in .env}
+      RAILS_LOG_LEVEL: ${RAILS_LOG_LEVEL:-info}
+      DB_HOST: db
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SOLID_QUEUE_IN_PUMA: "true"
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+      ACTIVE_STORAGE_SERVICE: local
+      GBOOLDER_HOST: ${GBOOLDER_HOST:?Set GBOOLDER_HOST in .env}
+      GBOOLDER_ASSET_HOST: ${GBOOLDER_ASSET_HOST:-${GBOOLDER_HOST}}
+      GBOOLDER_CONTACT_EMAIL: ${GBOOLDER_CONTACT_EMAIL}
+      GBOOLDER_MAIL_FROM: ${GBOOLDER_MAIL_FROM}
+      GBOOLDER_ADMIN_USER: ${GBOOLDER_ADMIN_USER}
+      GBOOLDER_ADMIN_PASSWORD: ${GBOOLDER_ADMIN_PASSWORD:?Set GBOOLDER_ADMIN_PASSWORD in .env}
+      PLAUSIBLE_DOMAIN: ${PLAUSIBLE_DOMAIN:-}
+      MAP_STYLE_URL: ${MAP_STYLE_URL:-}
+    volumes:
+      - storage_data:/rails/storage
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/up"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 120s
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      GBOOLDER_HOST: ${GBOOLDER_HOST}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  postgres_data:
+  storage_data:
+  caddy_data:
+  caddy_config:

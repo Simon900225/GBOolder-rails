@@ -18,7 +18,11 @@ class Map::GeojsonController < ApplicationController
   private
 
   def render_geojson(json)
-    expires_in 1.hour, public: true
+    if Rails.env.development?
+      expires_now
+    else
+      expires_in 1.hour, public: true
+    end
 
     respond_to do |format|
       format.geojson { render json: json }
