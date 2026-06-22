@@ -1,3 +1,0 @@
-{$GBOOLDER_HOST} {
-	reverse_proxy web:80
-}

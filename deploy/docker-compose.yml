@@ -43,8 +43,8 @@ services:
       MAP_STYLE_URL: ${MAP_STYLE_URL:-}
     volumes:
       - storage_data:/rails/storage
-    expose:
-      - "80"
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:80"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/up"]
       interval: 15s
@@ -52,24 +52,6 @@ services:
       retries: 5
       start_period: 120s
 
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    depends_on:
-      web:
-        condition: service_healthy
-    ports:
-      - "80:80"
-      - "443:443"
-    environment:
-      GBOOLDER_HOST: ${GBOOLDER_HOST}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-
 volumes:
   postgres_data:
   storage_data:
-  caddy_data:
-  caddy_config:
