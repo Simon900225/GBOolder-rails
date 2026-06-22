@@ -62,14 +62,19 @@ Rails.application.configure do
   # Set host to be used by links generated in mailer templates.
   config.action_mailer.default_url_options = { host: Gboolder::HOST, protocol: "https" }
 
-  config.action_mailer.delivery_method = :smtp
-  config.action_mailer.smtp_settings = {
-    address: "email-smtp.eu-north-1.amazonaws.com",
-    port: "587",
-    authentication: :plain,
-    user_name: Rails.application.credentials.dig(:amazon_smtp, :username),
-    password: Rails.application.credentials.dig(:amazon_smtp, :password)
-  }
+  if ENV["SMTP_ADDRESS"].present?
+    config.action_mailer.delivery_method = :smtp
+    config.action_mailer.smtp_settings = {
+      address: ENV["SMTP_ADDRESS"],
+      port: ENV.fetch("SMTP_PORT", "587"),
+      authentication: :plain,
+      user_name: ENV.fetch("SMTP_USER_NAME", ""),
+      password: ENV.fetch("SMTP_PASSWORD", "")
+    }
+  else
+    config.action_mailer.delivery_method = :test
+    config.action_mailer.raise_delivery_errors = false
+  end
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation cannot be found).

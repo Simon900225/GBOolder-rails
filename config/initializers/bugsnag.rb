@@ -1,3 +1,3 @@
 Bugsnag.configure do |config|
-  config.api_key = Rails.application.credentials.dig(:bugsnag, :api_key) unless Rails.env.local?
+  config.api_key = ENV["BUGSNAG_API_KEY"] if ENV["BUGSNAG_API_KEY"].present?
 end
