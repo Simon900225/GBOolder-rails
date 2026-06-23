@@ -18,6 +18,7 @@
     aria-modal="true"
     aria-label="<%= t('views.map.problem_sheet.label') %>"
     data-action="mousedown->problem-sheet#onDragStart touchstart->problem-sheet#onDragStart touchend->problem-sheet#onDragEnd"
+    data-problem-sheet-target="container"
   >
     <button
       type="button"
@@ -38,16 +39,17 @@
     <div
       data-problem-sheet-target="content"
       class="problem-sheet-content"
+      data-action="touchmove->problem-sheet#onTouchMove:passive"
     >
-      <div class="relative aspect-[4/3] bg-gray-200">
+      <div class="aspect-w-4 aspect-h-3 bg-gray-200">
         <img
           data-problem-sheet-target="photo"
-          class="hidden absolute inset-0 w-full h-full object-cover"
+          class="hidden w-full h-full object-cover"
           alt=""
         >
         <div
           data-problem-sheet-target="photoPlaceholder"
-          class="absolute inset-0 flex items-center justify-center bg-gray-200"
+          class="flex items-center justify-center w-full h-full min-h-[180px] bg-gray-200"
         >
           <%= render 'svg/nophoto', width: 64, height: 64 %>
         </div>
@@ -60,18 +62,12 @@
         </div>
 
         <div data-problem-sheet-target="gboLinkRow" class="hidden mt-4">
-          <a
-            data-problem-sheet-target="gboLink"
-            href="#"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium"
-          >
+          <%= link_to "#", target: "_blank", rel: "noopener noreferrer", data: { problem_sheet_target: "gboLink" }, class: "inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium" do %>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
             <%= t('problem.see_on_gbo') %>
-          </a>
+          <% end %>
         </div>
       </div>
     </div>

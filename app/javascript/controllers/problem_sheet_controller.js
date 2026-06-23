@@ -14,8 +14,7 @@ export default class extends Controller {
   ]
 
   static values = {
-    locale: { type: String, default: 'en' },
-    sheetHeight: { type: Number, default: 340 }
+    locale: { type: String, default: 'en' }
   }
 
   connect () {
@@ -69,9 +68,9 @@ export default class extends Controller {
     this.isPresented = true
     this.element.classList.remove('hidden')
     this.backdropTarget.classList.remove('hidden')
-    this.currentTranslateY = this.getTranslateYForHeight(this.sheetHeightValue)
-    this.applyTransform(false)
+    this.syncSheetPosition(false)
     requestAnimationFrame(() => {
+      this.syncSheetPosition(true)
       this.backdropTarget.classList.add('problem-sheet-backdrop--visible')
     })
   }
@@ -128,6 +127,10 @@ export default class extends Controller {
     } else {
       this.gboLinkRowTarget.classList.add('hidden')
     }
+
+    requestAnimationFrame(() => {
+      if (this.isPresented) this.syncSheetPosition(true)
+    })
   }
 
   onBackdropClick () {
@@ -170,7 +173,7 @@ export default class extends Controller {
     if (!this.isDragging) return
 
     const maxY = window.innerHeight
-    const minY = this.getTranslateYForHeight(this.sheetHeightValue)
+    const minY = this.getTranslateYForHeight(this.getSheetHeight())
     this.currentTranslateY = Math.max(minY, Math.min(maxY, this.startTranslateY + deltaY))
     this.applyTransform(true)
 
@@ -192,8 +195,7 @@ export default class extends Controller {
       return
     }
 
-    this.currentTranslateY = this.getTranslateYForHeight(this.sheetHeightValue)
-    this.applyTransform(false)
+    this.syncSheetPosition(false)
   }
 
   onMouseMove (event) {
@@ -212,9 +214,22 @@ export default class extends Controller {
 
   onResize () {
     if (this.isPresented) {
-      this.currentTranslateY = this.getTranslateYForHeight(this.sheetHeightValue)
-      this.applyTransform(true)
+      this.syncSheetPosition(true)
     }
+  }
+
+  getSheetHeight () {
+    if (this.isPresented && this.hasContainerTarget) {
+      return this.containerTarget.offsetHeight
+    }
+
+    const width = Math.min(window.innerWidth, 500)
+    return Math.round(width * 0.75 + 120)
+  }
+
+  syncSheetPosition (instant) {
+    this.currentTranslateY = this.getTranslateYForHeight(this.getSheetHeight())
+    this.applyTransform(instant)
   }
 
   getTranslateYForHeight (height) {
@@ -224,11 +239,6 @@ export default class extends Controller {
   applyTransform (instant) {
     this.containerTarget.style.transition = instant ? 'none' : 'transform 0.3s ease'
     this.containerTarget.style.transform = `translateY(${this.currentTranslateY}px)`
-
-    if (this.hasContentTarget) {
-      const contentMaxHeight = window.innerHeight - this.currentTranslateY - 60
-      this.contentTarget.style.maxHeight = `${contentMaxHeight}px`
-    }
   }
 
   clientY (event) {
