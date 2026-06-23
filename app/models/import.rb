@@ -8,8 +8,16 @@ class Import < ApplicationRecord
     applied_at.present?
   end
 
+  def import_parser
+    @import_parser ||= ImportParser.new(RGeo::GeoJSON.decode(file.download), area_id: area_id_for_inference)
+  end
+
   def objects_to_update
-    ImportParser.new(RGeo::GeoJSON.decode(file.download), area_id: area_id_for_inference).objects_to_update
+    import_parser.objects_to_update
+  end
+
+  def objects_to_delete
+    import_parser.deletions
   end
 end
 
@@ -19,7 +27,10 @@ class ImportParser
     @area_id_override = area_id
     @area_id = infer_area_id
     @objects = []
+    @deletions = []
   end
+
+  attr_reader :deletions
 
   def objects_to_update
     parse_problems
@@ -48,6 +59,13 @@ class ImportParser
 
   def parse_boulders
     boulder_features.each do |feature|
+      if truthy?(feature["deleted"])
+        raise "Deleted boulders must have a `boulderId` property" unless feature["boulderId"].present?
+
+        @deletions << Boulder.find(feature["boulderId"])
+        next
+      end
+
       # some editors use LineString and some use Polygon => we need to handle both
       line_string = case feature.geometry
       when ::RGeo::Feature::LineString
@@ -103,5 +121,9 @@ class ImportParser
   # some editors use LineString and some use Polygon => we need to handle both
   def boulder_features
     @boulder_features ||= @features.select { |f| f.geometry.geometry_type.in?([ ::RGeo::Feature::LineString, ::RGeo::Feature::Polygon ]) }
+  end
+
+  def truthy?(value)
+    value == true || value == "true"
   end
 end

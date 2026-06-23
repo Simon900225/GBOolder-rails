@@ -3,7 +3,7 @@ import { PolygonEditor, squareAround, lineAround, closeRing, openRing } from 'ma
 import { ProblemLayer } from 'map_editor/problem_layer'
 
 export default class extends Controller {
-  static targets = ['mapContainer', 'modeButton', 'saveButton', 'sidebar', 'unplacedList', 'unplacedSearch']
+  static targets = ['mapContainer', 'modeButton', 'saveButton', 'sidebar', 'unplacedList', 'unplacedSearch', 'selectionInfo']
   static values = {
     dataUrl: String,
     saveUrl: String,
@@ -18,6 +18,8 @@ export default class extends Controller {
     this.walls = []
     this.problems = []
     this.unplacedProblems = []
+    this.deletedBoulderIds = []
+    this.selectedProblem = null
     this.nextTempId = 1
     this.dirty = false
 
@@ -425,8 +427,15 @@ export default class extends Controller {
 
     if (this.polygonEditor.tryInsertVertex([event.lngLat.lng, event.lngLat.lat])) return
 
+    const problem = this.problemAt([event.lngLat.lng, event.lngLat.lat])
+    if (problem) {
+      this.selectProblem(problem)
+      return
+    }
+
     const boulder = this.polygonEditor.hitTestBoulder(this.boulders, [event.lngLat.lng, event.lngLat.lat])
     if (boulder) {
+      this.clearProblemSelection()
       this.polygonEditor.selectBoulder(boulder)
       this.refreshLayers()
       return
@@ -434,12 +443,14 @@ export default class extends Controller {
 
     const wall = this.polygonEditor.hitTestWall(this.walls, [event.lngLat.lng, event.lngLat.lat])
     if (wall) {
+      this.clearProblemSelection()
       this.polygonEditor.selectWall(wall)
       this.refreshWallLayers()
       return
     }
 
     this.polygonEditor.clearVertexMarkers()
+    this.clearProblemSelection()
     this.refreshLayers()
   }
 
@@ -484,13 +495,7 @@ export default class extends Controller {
     if (this.mode !== 'select') return
 
     if (this.polygonEditor.selectedBoulder) {
-      const selected = this.polygonEditor.selectedBoulder
-      if (selected.boulderId) return
-
-      this.boulders = this.boulders.filter((b) => b.tempId !== selected.tempId)
-      this.polygonEditor.clearVertexMarkers()
-      this.markDirty()
-      this.refreshLayers()
+      this.deleteSelectedBoulder()
       return
     }
 
@@ -502,6 +507,70 @@ export default class extends Controller {
       this.polygonEditor.clearVertexMarkers()
       this.markDirty()
       this.refreshWallLayers()
+    }
+  }
+
+  deleteSelectedBoulder() {
+    const selected = this.polygonEditor.selectedBoulder
+    if (!selected) return
+
+    if (selected.boulderId) {
+      this.deletedBoulderIds.push(selected.boulderId)
+    }
+
+    this.boulders = this.boulders.filter((boulder) => {
+      if (selected.boulderId) return boulder.boulderId !== selected.boulderId
+      return boulder.tempId !== selected.tempId
+    })
+
+    this.polygonEditor.clearVertexMarkers()
+    this.markDirty()
+    this.refreshLayers()
+  }
+
+  selectProblem(problem) {
+    this.selectedProblem = problem
+    this.polygonEditor.clearVertexMarkers()
+    this.refreshLayers()
+    this.refreshWallLayers()
+    this.updateSelectionHeader()
+  }
+
+  clearProblemSelection() {
+    if (!this.selectedProblem) return
+
+    this.selectedProblem = null
+    this.updateSelectionHeader()
+  }
+
+  problemAt(lngLat, thresholdPx = 16) {
+    const point = this.map.project(lngLat)
+    let best = null
+
+    for (const problem of this.problems) {
+      if (!problem.coordinates) continue
+
+      const problemPoint = this.map.project(problem.coordinates)
+      const distance = Math.hypot(point.x - problemPoint.x, point.y - problemPoint.y)
+      if (distance <= thresholdPx && (!best || distance < best.distance)) {
+        best = { problem, distance }
+      }
+    }
+
+    return best?.problem || null
+  }
+
+  updateSelectionHeader() {
+    if (!this.hasSelectionInfoTarget) return
+
+    if (this.selectedProblem) {
+      const { name, grade } = this.selectedProblem
+      const gradeText = grade ? ` · ${grade}` : ''
+      this.selectionInfoTarget.textContent = `${name}${gradeText}`
+      this.selectionInfoTarget.classList.remove('hidden')
+    } else {
+      this.selectionInfoTarget.textContent = ''
+      this.selectionInfoTarget.classList.add('hidden')
     }
   }
 
@@ -597,6 +666,21 @@ export default class extends Controller {
           coordinates: wall.coordinates,
         },
         properties,
+      })
+    })
+
+    this.deletedBoulderIds.forEach((boulderId) => {
+      features.push({
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [[[0, 0], [0, 0], [0, 0], [0, 0]]],
+        },
+        properties: {
+          boulderId,
+          deleted: true,
+          areaId: this.areaId,
+        },
       })
     })
 

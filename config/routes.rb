@@ -101,6 +101,7 @@ Rails.application.routes.draw do
       get "pois", to: "geojson#pois", defaults: { format: :geojson }
     end
 
+    get "map/problems/:id", to: "map/problems#show", defaults: { format: :json }, as: :map_problem
     get "map(/:slug)", to: "map#index", as: :map
     get "app", to: "pages#app", as: :app
     get "privacy", to: "pages#privacy", as: :privacy

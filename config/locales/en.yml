@@ -24,6 +24,7 @@ en:
     problems: Problems
     level_x: Level %{level} 
     see_on_bleau_info: See on bleau.info
+    see_on_gbo: See on GBO
     see_on_map: See on the map
     steepness:
       wall: Wall
@@ -168,6 +169,9 @@ en:
         grade_max: Grade max
         apply: Apply
         clear: Clear
+      problem_sheet:
+        label: Problem details
+        close: Close
     app_landing:
       title: Gothenburg bouldering in your pocket
       subtitle: "The community guide to bouldering on the Swedish west coast"

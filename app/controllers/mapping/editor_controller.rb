@@ -71,9 +71,11 @@ class Mapping::EditorController < ApplicationController
     end
 
     objects = @import.objects_to_update
+    deletions = @import.objects_to_delete
     conflict_count = objects.count(&:conflicting_updated_at)
 
     ActiveRecord::Base.transaction do
+      deletions.each(&:destroy!)
       objects.each do |object|
         object.import = @import
         object.save!
@@ -96,7 +98,9 @@ class Mapping::EditorController < ApplicationController
     @updates = if @import.applied?
       @import.associated_audits.map { |audit| [ audit.auditable, audit.audited_changes, audit ] }
     else
-      @import.objects_to_update.map { |object| [ object, object.changes ] }
+      updates = @import.objects_to_update.map { |object| [ object, object.changes ] }
+      deletions = @import.objects_to_delete.map { |object| [ object, { _destroy: [ false, true ] } ] }
+      updates + deletions
     end
   end
 end

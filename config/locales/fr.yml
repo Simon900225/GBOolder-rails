@@ -24,6 +24,7 @@ fr:
     problems: Voies
     level_x: Niveau %{level} 
     see_on_bleau_info: Voir sur bleau.info
+    see_on_gbo: Voir sur GBO
     see_on_map: Voir sur la carte
     steepness:
       wall: Mur
@@ -168,6 +169,9 @@ fr:
         grade_max: Cotation max
         apply: Appliquer
         clear: Effacer
+      problem_sheet:
+        label: Détails de la voie
+        close: Fermer
     app_landing:
       title: Bouldering göteborgais dans votre poche
       subtitle: "Le guide communautaire pour Göteborg et la côte ouest"

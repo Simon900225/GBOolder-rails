@@ -1,0 +1,79 @@
+<div
+  data-controller="problem-sheet"
+  data-action="showproblem@window->problem-sheet#show hideproblem@window->problem-sheet#hide"
+  data-problem-sheet-locale-value="<%= I18n.locale %>"
+  class="hidden"
+>
+  <div
+    data-problem-sheet-target="backdrop"
+    data-action="click->problem-sheet#onBackdropClick"
+    class="problem-sheet-backdrop hidden"
+    aria-hidden="true"
+  ></div>
+
+  <div
+    data-problem-sheet-target="container"
+    class="problem-sheet-container"
+    role="dialog"
+    aria-modal="true"
+    aria-label="<%= t('views.map.problem_sheet.label') %>"
+    data-action="mousedown->problem-sheet#onDragStart touchstart->problem-sheet#onDragStart touchend->problem-sheet#onDragEnd"
+  >
+    <button
+      type="button"
+      class="problem-sheet-close"
+      data-action="click->problem-sheet#onCloseClick"
+      aria-label="<%= t('views.map.problem_sheet.close') %>"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+
+    <div class="problem-sheet-handle" aria-hidden="true">
+      <div class="problem-sheet-handle-bar"></div>
+    </div>
+
+    <div
+      data-problem-sheet-target="content"
+      class="problem-sheet-content"
+    >
+      <div class="relative aspect-[4/3] bg-gray-200">
+        <img
+          data-problem-sheet-target="photo"
+          class="hidden absolute inset-0 w-full h-full object-cover"
+          alt=""
+        >
+        <div
+          data-problem-sheet-target="photoPlaceholder"
+          class="absolute inset-0 flex items-center justify-center bg-gray-200"
+        >
+          <%= render 'svg/nophoto', width: 64, height: 64 %>
+        </div>
+      </div>
+
+      <div class="px-4 py-4">
+        <div class="flex items-start justify-between gap-4">
+          <h2 data-problem-sheet-target="name" class="text-xl font-bold text-gray-900"></h2>
+          <div data-problem-sheet-target="grade" class="text-xl font-bold text-gray-400 shrink-0"></div>
+        </div>
+
+        <div data-problem-sheet-target="gboLinkRow" class="hidden mt-4">
+          <a
+            data-problem-sheet-target="gboLink"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+            <%= t('problem.see_on_gbo') %>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

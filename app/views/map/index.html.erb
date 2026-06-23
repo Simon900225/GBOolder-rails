@@ -46,5 +46,6 @@ data-mapbox-bounds-value="<%= @bounds.to_json %>"
 >
   <div id="map"></div>
   <%= render "filters" %>
+  <%= render "problem_sheet" unless params[:contribute] || params[:circuit7a] %>
 
 </div>

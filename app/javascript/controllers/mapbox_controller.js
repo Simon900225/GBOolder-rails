@@ -43,11 +43,11 @@ export default class extends Controller {
       this.cleanHistory()
     });
 
-    this.popup = null
+    this.pendingProblemSheet = null
     this.map.on('moveend', () => {
-      if(this.popup != null) {
-        this.popup.addTo(this.map)
-        this.popup = null
+      if (this.pendingProblemSheet != null) {
+        this.showProblemSheet(this.pendingProblemSheet)
+        this.pendingProblemSheet = null
       }
     });
 
@@ -590,21 +590,33 @@ export default class extends Controller {
       });
 
       if(!this.contributeValue && !this.circuit7aValue) {
-
-        // FIXME: make it DRY
-        const coordinates = [problem.lon, problem.lat];
-        var name = problem.name
-        if(this.localeValue == 'en' && problem.nameEn) {
-          name = problem.nameEn
-        }  
-        const html = `<a href="/${this.localeValue}/redirects/new?problem_id=${problem.id}" target="_blank">${name || ""}</a><span class="text-gray-400 ml-1">${problem.grade}</span>`;
-           
-        // will be displayed thanks to the 'moveend' event code above
-        this.popup = new maplibregl.Popup({closeButton:false, focusAfterOpen: false, offset: [0, -8]}) 
-          .setLngLat(coordinates)
-          .setHTML(html)
+        this.pendingProblemSheet = problem
       }
     }
+  }
+
+  localizedProblemName(problem) {
+    var name = problem.name
+    if(this.localeValue == 'en' && problem.nameEn) {
+      name = problem.nameEn
+    }
+    return name || ""
+  }
+
+  showProblemSheet(problem) {
+    if (this.contributeValue || this.circuit7aValue) return
+
+    window.dispatchEvent(new CustomEvent('showproblem', {
+      detail: {
+        id: problem.id,
+        name: this.localizedProblemName(problem),
+        grade: problem.grade
+      }
+    }))
+  }
+
+  hideProblemSheet() {
+    window.dispatchEvent(new CustomEvent('hideproblem'))
   }
 
   cleanHistory() {
@@ -638,21 +650,15 @@ export default class extends Controller {
       });
   
       this.map.on('click', 'problems', (e) => {
-  
         let problem = e.features[0].properties
-  
-        // FIXME: make it DRY
-        const coordinates = e.features[0].geometry.coordinates.slice();
-        var name = problem.name
-        if(this.localeValue == 'en' && problem.nameEn) {
-          name = problem.nameEn
-        }        
-        const html = `<a href="/${this.localeValue}/redirects/new?problem_id=${problem.id})" target="_blank">${name || ""}</a><span class="text-gray-400 ml-1">${problem.grade}</span>`;
-         
-        new maplibregl.Popup({closeButton:false, focusAfterOpen: false, offset: [0, -8]})
-        .setLngLat(coordinates)
-        .setHTML(html)
-        .addTo(this.map);
+        this.showProblemSheet(problem)
+      });
+
+      this.map.on('click', (e) => {
+        const features = this.map.queryRenderedFeatures(e.point, { layers: ['problems'] })
+        if (features.length === 0) {
+          this.hideProblemSheet()
+        }
       });
     }
 
@@ -938,14 +944,12 @@ export default class extends Controller {
       speed: 2
     });
 
-    // FIXME: make it DRY
-    const coordinates = [event.detail.lon, event.detail.lat];
-    const html = `<a href="/${this.localeValue}/redirects/new?problem_id=${event.detail.id}" target="_blank">${event.detail.name || ""}</a><span class="text-gray-400 ml-1">${event.detail.grade}</span>`;
-     
-    new maplibregl.Popup({closeButton:false, focusAfterOpen: false, offset: [0, -8]}) 
-    .setLngLat(coordinates)
-    .setHTML(html)
-    .addTo(this.map);
+    this.pendingProblemSheet = {
+      id: event.detail.id,
+      name: event.detail.name,
+      nameEn: event.detail.name,
+      grade: event.detail.grade
+    }
   }
 
   gotoarea(event) {

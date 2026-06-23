@@ -15,6 +15,7 @@
       &larr; Areas
     <% end %>
     <span class="font-semibold text-gray-900"><%= @area.name %></span>
+    <span class="text-sm text-gray-600 hidden" data-map-editor-target="selectionInfo"></span>
 
     <div class="flex gap-1 ml-4">
       <button type="button" class="btn text-sm" data-map-editor-target="modeButton" data-mode="select" data-action="map-editor#setMode">Select</button>
