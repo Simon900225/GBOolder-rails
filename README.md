@@ -87,7 +87,8 @@ See **[docs/mapping.md](docs/mapping.md)** for a full guide: areas, sectors, bou
 | `/fontainebleau` routes | `/gothenburg` or area-centric URLs |
 | Font grade validation (`1a`–`9c+`) | GBO grades via `Gbo::GradeNormalizer` |
 | French/English i18n | Swedish + English (at minimum) |
-| `db/dump-prod.sql` | GBO-imported seed data |
+| `db/dump-prod.sql` | GBO-imported seed data (fresh install) |
+| `db/dump-prod-data.sql` | Climbing data only (prod refresh) |
 
 ## Roadmap
 
@@ -117,6 +118,7 @@ Environment variables (see `.env.example`):
 - [x] Map GBO grades via `Gbo::GradeNormalizer` and relaxed validation
 - [x] Import existing GPS coordinates from GBO as initial `Problem#location`
 - [x] Import photos via `rake gbo:photos` (optional, unpublished topos)
+- [x] Import phototopo images + line coordinates via `rake gbo:phototopos`
 - [x] Decouple `Area` from `bleau_area` (nullable + `gbo_id` linkage)
 
 ### Phase 3 — Map infrastructure
@@ -195,14 +197,37 @@ To refresh from scraper JSON:
 ```bash
 # Scrape (see ../GBO-scraper/README.md), then:
 rake gbo:reset GBO_PUBLISH=1
-rake dev:dump   # regenerate db/dump-prod.sql
+rake dev:dump   # regenerate db/dump-prod.sql and db/dump-prod-data.sql
 ```
+
+To push dev data to production (existing database):
+
+```bash
+# On your Mac — regenerate prod-compatible dumps
+rake dev:dump
+scp db/dump-prod-data.sql user@server:~/GBOolder-rails/db/
+
+# On the server — refresh data (run with bash, not sh)
+cd deploy
+./restore-seed.sh --refresh
+```
+
+Use `./restore-seed.sh` (without `--refresh`) only for a **fresh empty** production database.
 
 Optional: import reference photos from GBO (~40 min):
 
 ```bash
 rake gbo:photos
 ```
+
+Optional: import phototopo images and line drawings from GBO:
+
+```bash
+# Scrape (see ../GBO-scraper/README.md), then:
+GBO_PHOTOTOPO_JSON=../GBO-scraper/output/gbo-phototopos.json rake gbo:phototopos
+```
+
+Set `GBO_PHOTOTOPO_PUBLISH=0` to import as unpublished topos. Re-runs skip already-imported phototopos; use `OVERWRITE=1` to replace existing line coordinates.
 
 > **Note:** `GBO_JSON` defaults to `../GBO-scraper/output/gbo.json`. Set `GBO_PUBLISH=1` so areas appear on the map.
 

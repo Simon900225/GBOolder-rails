@@ -49,4 +49,34 @@ namespace :gbo do
     puts "Errors: #{stats[:errors].size}" if stats[:errors].any?
     puts "done".green
   end
+
+  desc "Import GBO phototopo images and line coordinates from scraper JSON"
+  task phototopos: :environment do
+    json_path = Gbo::PhototopoImporter.default_json_path
+    publish = ENV.fetch("GBO_PHOTOTOPO_PUBLISH", "1") == "1"
+    overwrite = ENV["OVERWRITE"] == "1"
+    delay = ENV.fetch("GBO_PHOTOTOPO_DELAY", Gbo::PhototopoImporter::DEFAULT_DELAY)
+
+    raise "JSON file not found: #{json_path}" unless File.exist?(json_path)
+
+    puts "Importing phototopos from #{json_path}..."
+    puts "Published: #{publish ? 'yes' : 'no'}"
+    puts "Overwrite existing lines: #{overwrite ? 'yes' : 'no'}"
+    puts "Delay: #{delay}s between downloads"
+    puts
+
+    stats = Gbo::PhototopoImporter.new(
+      json_path: json_path,
+      publish: publish,
+      overwrite: overwrite,
+      delay: delay
+    ).import!
+
+    puts "Topos: #{stats[:topos_created]} created, #{stats[:topos_skipped]} skipped (already imported)"
+    puts "Lines: #{stats[:lines_created]} created, #{stats[:lines_skipped]} skipped (already had coordinates)"
+    puts "Problems missing from DB: #{stats[:problems_missing]}" if stats[:problems_missing].positive?
+    puts "Images downloaded: #{stats[:images_downloaded]}"
+    puts "Errors: #{stats[:errors].size}" if stats[:errors].any?
+    puts "done".green
+  end
 end
