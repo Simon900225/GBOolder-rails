@@ -37,6 +37,8 @@ export default class extends Controller {
 
     this.addControls()
 
+    this.activeStackPopup = null
+
     this.map.on('load', () => {
       this.addLayers()
       this.centerMap()
@@ -213,24 +215,7 @@ export default class extends Controller {
           ]
       },
       paint: {
-        'circle-radius': 
-          [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            15,
-            2,
-            18,
-            4,
-            22,
-            [
-              "case",
-              ["has", "circuitNumber"],
-              16,
-              10
-            ]
-          ]
-        ,
+        'circle-radius': this.problemCircleRadius(),
         'circle-color': this.circuitColorExpression(),
         'circle-opacity': 
         [
@@ -243,8 +228,19 @@ export default class extends Controller {
           1
         ]
       },
-      filter: ['==', ['geometry-type'], 'Point'],
+      filter: this.singleProblemFilter(),
     });
+
+    this.stackedProblemLayerIds().forEach((layerId, index) => {
+      this.map.addLayer({
+        id: layerId,
+        type: 'circle',
+        source: 'problems',
+        minzoom: 15,
+        paint: this.stackedProblemCirclePaint(index === 0),
+        filter: this.stackedProblemFilter(),
+      })
+    })
 
     this.map.addLayer({
       id: 'problems-texts',
@@ -284,7 +280,7 @@ export default class extends Controller {
           ]
         ,
       },
-      filter: ['==', ['geometry-type'], 'Point'],
+      filter: this.singleProblemFilter(),
     });
 
     this.map.addLayer({
@@ -573,6 +569,114 @@ export default class extends Controller {
     ]
   }
 
+  stackedProblemLayerIds() {
+    return ['problems-stacks-back', 'problems-stacks-front']
+  }
+
+  problemCircleRadius() {
+    return [
+      'interpolate',
+      ['linear'],
+      ['zoom'],
+      15, 2,
+      18, 4,
+      22,
+      [
+        'case',
+        ['has', 'circuitNumber'],
+        16,
+        10
+      ]
+    ]
+  }
+
+  stackedProblemCirclePaint(isBackCircle) {
+    const sign = isBackCircle ? 0 : 1
+    return {
+      'circle-radius': this.problemCircleRadius(),
+      'circle-color': '#878A8D',
+      'circle-stroke-width': [
+        'interpolate', ['linear'], ['zoom'],
+        15, 1,
+        18, 1.5,
+        22, 2
+      ],
+      'circle-stroke-color': '#fff',
+      'circle-translate': [
+        'interpolate', ['linear'], ['zoom'],
+        15, ['literal', [sign * 2, -sign * 2]],
+        18, ['literal', [sign * 4, -sign * 4]],
+        22, ['literal', [sign * 10, -sign * 10]]
+      ],
+      'circle-translate-anchor': 'viewport',
+    }
+  }
+
+  singleProblemFilter(grades = null) {
+    const filter = ['all', ['==', ['geometry-type'], 'Point'], ['!=', ['get', 'stacked'], true]]
+    if (grades) filter.push(this.gradeFilterExpression(grades))
+    return filter
+  }
+
+  stackedProblemFilter(grades = null) {
+    const filter = ['all', ['==', ['geometry-type'], 'Point'], ['==', ['get', 'stacked'], true]]
+    if (grades) filter.push(this.gradeFilterExpression(grades))
+    return filter
+  }
+
+  gradeFilterExpression(grades) {
+    return ['any', ...grades.map(grade => ['in', grade, ['get', 'grades']])]
+  }
+
+  showStackPopup(coordinates, stack) {
+    if (this.activeStackPopup) {
+      this.activeStackPopup.remove()
+      this.activeStackPopup = null
+    }
+
+    const problems = JSON.parse(stack.problems)
+    const html = problems.map((problem, index) => {
+      const name = this.localizedProblemName(problem)
+      return `<button type="button" class="stack-problem-item" data-problem-index="${index}">
+        <span class="stack-problem-item-name">${this.escapeHtml(name)}</span>
+        <span class="stack-problem-item-grade">${this.escapeHtml(problem.grade || '')}</span>
+      </button>`
+    }).join('')
+
+    const popup = new maplibregl.Popup({ closeButton: false, focusAfterOpen: false, offset: [0, -8], className: 'stack-problems-popup' })
+      .setLngLat(coordinates)
+      .setHTML(`<div class="stack-problems-list">${html}</div>`)
+      .addTo(this.map)
+
+    popup.getElement().querySelectorAll('.stack-problem-item').forEach(button => {
+      button.addEventListener('click', () => {
+        const problem = problems[button.dataset.problemIndex]
+        this.showProblemSheet({
+          id: problem.id,
+          name: this.localizedProblemName(problem),
+          nameEn: problem.nameEn,
+          grade: problem.grade
+        })
+        popup.remove()
+        this.activeStackPopup = null
+      })
+    })
+
+    popup.on('close', () => {
+      if (this.activeStackPopup === popup) this.activeStackPopup = null
+    })
+
+    this.activeStackPopup = popup
+  }
+
+  escapeHtml(value) {
+    return String(value)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+  }
+
   centerMap() {
     if(this.hasBoundsValue) { 
       let bounds = this.boundsValue
@@ -648,6 +752,20 @@ export default class extends Controller {
       this.map.on('mouseleave', 'problems', () => {
         this.map.getCanvas().style.cursor = '';
       });
+
+      this.stackedProblemLayerIds().forEach(layerId => {
+        this.map.on('mouseenter', layerId, () => {
+          this.map.getCanvas().style.cursor = 'pointer';
+        });
+        this.map.on('mouseleave', layerId, () => {
+          this.map.getCanvas().style.cursor = '';
+        });
+        this.map.on('click', layerId, (e) => {
+          const stack = e.features[0].properties
+          const coordinates = e.features[0].geometry.coordinates.slice()
+          this.showStackPopup(coordinates, stack)
+        });
+      });
   
       this.map.on('click', 'problems', (e) => {
         let problem = e.features[0].properties
@@ -655,8 +773,12 @@ export default class extends Controller {
       });
 
       this.map.on('click', (e) => {
-        const features = this.map.queryRenderedFeatures(e.point, { layers: ['problems'] })
+        const features = this.map.queryRenderedFeatures(e.point, { layers: ['problems', ...this.stackedProblemLayerIds()] })
         if (features.length === 0) {
+          if (this.activeStackPopup) {
+            this.activeStackPopup.remove()
+            this.activeStackPopup = null
+          }
           this.hideProblemSheet()
         }
       });
@@ -892,6 +1014,7 @@ export default class extends Controller {
 
     this.applyLayerFilter('problems', grades)
     this.applyLayerFilter('problems-texts', grades)
+    this.applyLayerFilter('problems-stacks', grades)
   }
 
   clearFilters() {
@@ -906,9 +1029,21 @@ export default class extends Controller {
 
     this.applyLayerFilter('problems', this.allGrades)
     this.applyLayerFilter('problems-texts', this.allGrades)
+    this.applyLayerFilter('problems-stacks', this.allGrades)
   }
 
   applyLayerFilter(layer, grades) {
+    if (layer === 'problems-stacks') {
+      const filter = this.stackedProblemFilter(grades)
+      this.stackedProblemLayerIds().forEach(layerId => this.map.setFilter(layerId, filter))
+      return
+    }
+
+    if (layer === 'problems' || layer === 'problems-texts') {
+      this.map.setFilter(layer, this.singleProblemFilter(grades))
+      return
+    }
+
     this.map.setFilter(layer, [
       'match',
       ['get', 'grade'],

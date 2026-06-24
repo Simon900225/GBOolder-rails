@@ -118,21 +118,66 @@ module Map
       end
 
       def problem_features
-        Problem.with_location.joins(:area).where(area: { published: true }).map do |problem|
-          hash = {}.with_indifferent_access
-          hash.merge!(problem.slice(:grade, :steepness, :featured, :popularity))
-          hash[:id] = problem.id
-          hash[:circuit_color] = problem.circuit&.color
-          hash[:circuit_id] = problem.circuit_id_simplified
-          hash[:circuit_number] = problem.circuit_number_simplified
+        problems = Problem.with_location.joins(:area).where(area: { published: true }).to_a
 
-          name_fr = I18n.with_locale(:fr) { problem.name_with_fallback }
-          name_en = I18n.with_locale(:en) { problem.name_with_fallback }
-          hash[:name] = name_fr
-          hash[:name_en] = (name_en != name_fr) ? name_en : ""
-
-          factory.feature(problem.location, nil, camelize_hash(hash))
+        problems.group_by { |problem| location_group_key(problem.location) }.flat_map do |_key, group|
+          if group.size == 1
+            [ problem_point_feature(group.first) ]
+          else
+            [ stacked_problem_point_feature(group.first.location, group) ]
+          end
         end
+      end
+
+      def location_group_key(location)
+        "#{location.lon},#{location.lat}"
+      end
+
+      def problem_point_feature(problem)
+        factory.feature(problem.location, nil, camelize_hash(problem_point_properties(problem)))
+      end
+
+      def stacked_problem_point_feature(location, problems)
+        factory.feature(location, nil, camelize_hash(stacked_problem_point_properties(problems)))
+      end
+
+      def problem_point_properties(problem)
+        hash = {}.with_indifferent_access
+        hash.merge!(problem.slice(:grade, :steepness, :featured, :popularity))
+        hash[:id] = problem.id
+        hash[:grades] = [ problem.grade ]
+        hash[:circuit_color] = problem.circuit&.color
+        hash[:circuit_id] = problem.circuit_id_simplified
+        hash[:circuit_number] = problem.circuit_number_simplified
+        hash[:name] = problem_name_fr(problem)
+        hash[:name_en] = problem_name_en(problem)
+        hash
+      end
+
+      def stacked_problem_point_properties(problems)
+        hash = {}.with_indifferent_access
+        hash[:stacked] = true
+        hash[:count] = problems.size
+        hash[:grades] = problems.map(&:grade).uniq
+        hash[:problems] = problems.sort_by { |p| -p.popularity.to_i }.map do |problem|
+          {
+            id: problem.id,
+            grade: problem.grade,
+            name: problem_name_fr(problem),
+            nameEn: problem_name_en(problem)
+          }
+        end.to_json
+        hash
+      end
+
+      def problem_name_fr(problem)
+        I18n.with_locale(:fr) { problem.name_with_fallback }
+      end
+
+      def problem_name_en(problem)
+        name_en = I18n.with_locale(:en) { problem.name_with_fallback }
+        name_fr = problem_name_fr(problem)
+        (name_en != name_fr) ? name_en : ""
       end
 
       def boulder_features
