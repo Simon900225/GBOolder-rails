@@ -36,20 +36,19 @@ module Map
       end
 
       def area_bounds_hash(area)
+        bounds = area.serialized_bounds
         camelize_hash(
           area_id: area.id,
-          south_west_lat: area.bounds[:south_west].lat.to_s,
-          south_west_lon: area.bounds[:south_west].lon.to_s,
-          north_east_lat: area.bounds[:north_east].lat.to_s,
-          north_east_lon: area.bounds[:north_east].lon.to_s
+          south_west_lat: bounds[:south_west][:lat].to_s,
+          south_west_lon: bounds[:south_west][:lng].to_s,
+          north_east_lat: bounds[:north_east][:lat].to_s,
+          north_east_lon: bounds[:north_east][:lng].to_s
         )
       end
 
       def area_hull_features
         Area.published.filter_map do |area|
-          hull = area.boulders.where(ignore_for_area_hull: false).
-            select("st_buffer(st_convexhull(st_collect(polygon::geometry)),0.00007) as hull").
-            to_a.first&.hull
+          hull = area_hull_for(area)
           next unless hull
 
           factory.feature(hull, nil, area_bounds_hash(area))
@@ -57,19 +56,36 @@ module Map
       end
 
       def area_features
-        Area.published.map do |area|
-          hull = area.boulders.where(ignore_for_area_hull: false).
-            select("st_buffer(st_convexhull(st_collect(polygon::geometry)),0.00007) as hull").
-            to_a.first&.hull
+        Area.published.filter_map do |area|
+          hull = area_hull_for(area)
           next unless hull
 
-          hash = area_bounds_hash(area).merge(
+          bounds = area.serialized_bounds
+          hash = camelize_hash(
+            area_id: area.id,
             name: area.short_name || area.name,
-            priority: area.priority
+            priority: area.priority,
+            south_west_lat: bounds[:south_west][:lat].to_s,
+            south_west_lon: bounds[:south_west][:lng].to_s,
+            north_east_lat: bounds[:north_east][:lat].to_s,
+            north_east_lon: bounds[:north_east][:lng].to_s
           )
 
-          factory.feature(hull.centroid, nil, hash)
-        end.compact
+          factory.feature(label_point(hull), nil, hash)
+        end
+      end
+
+      def area_hull_for(area)
+        area.boulders.where(ignore_for_area_hull: false).
+          select("st_buffer(st_convexhull(st_collect(polygon::geometry)),0.00007) as hull").
+          to_a.first&.hull
+      end
+
+      def label_point(hull)
+        centroid = hull.centroid
+        lon = centroid.respond_to?(:lon) ? centroid.lon : centroid.x
+        lat = centroid.respond_to?(:lat) ? centroid.lat : centroid.y
+        FACTORY.point(lon, lat)
       end
 
       def cluster_hull_features

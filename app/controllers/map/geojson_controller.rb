@@ -25,7 +25,7 @@ class Map::GeojsonController < ApplicationController
     end
 
     respond_to do |format|
-      format.geojson { render json: json }
+      format.geojson { render body: json, content_type: "application/geo+json" }
     end
   end
 end
