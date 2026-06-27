@@ -308,7 +308,7 @@ export default class extends Controller {
         ],
       },
       paint: {
-        'text-color': '#333',
+        'text-color': '#066',
         'text-halo-color': 'hsl(0, 4%, 100%)',
         'text-halo-width': [
           'interpolate', ['linear'], ['zoom'],
@@ -317,8 +317,8 @@ export default class extends Controller {
         ],
         'text-opacity': [
           'interpolate', ['linear'], ['zoom'],
-          14.5, 1,
-          15, 0
+          15.5, 1,
+          16, 0
         ],
       },
     });
