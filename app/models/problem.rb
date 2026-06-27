@@ -164,6 +164,17 @@ class Problem < ApplicationRecord
     update(has_line: lines.published.with_coordinates.any?)
   end
 
+  def gbo_external_image_url
+    return gbo_image_url if gbo_image_url.present?
+
+    topos.includes(photo_attachment: :blob).each do |topo|
+      url = topo.gbo_external_image_url
+      return url if url.present?
+    end
+
+    nil
+  end
+
   private
 
   def validate_circuit_fields

@@ -1,6 +1,8 @@
 class Map::ProblemsController < ApplicationController
   def show
-    problem = Problem.with_location.joins(:area).where(areas: { published: true }).find(params[:id])
+    problem = Problem.with_location.joins(:area).where(areas: { published: true })
+      .includes(topos: { photo_attachment: :blob })
+      .find(params[:id])
     render json: {
       id: problem.id,
       name: problem.name_with_fallback,

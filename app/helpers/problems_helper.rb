@@ -32,12 +32,17 @@ module ProblemsHelper
   end
 
   def problem_photo_url(problem)
-    line = problem.lines.published.includes(:topo).first
+    line = problem.lines.published.includes(topo: { photo_attachment: :blob }).first
     if line
-      topo_image_url(line.topo)
-    else
-      problem.gbo_image_url.presence
+      url = topo_image_url(line.topo)
+      return url if url.present? && !active_storage_proxy_url?(url)
     end
+
+    problem.gbo_external_image_url
+  end
+
+  def active_storage_proxy_url?(url)
+    url.include?("/rails/active_storage/")
   end
 
   def circle_view(content, background_color: "", text_color: "", klass: "h-6 w-6 leading-6")

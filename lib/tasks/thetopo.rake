@@ -47,4 +47,54 @@ namespace :thetopo do
     puts
     puts apply ? "done".green : "Dry run complete — re-run with APPLY=1 to write GPS".yellow
   end
+
+  desc "Scrape-sync GPS for every thetopo-*.json file (dry-run unless APPLY=1)"
+  task sync_all: :environment do
+    apply = ENV["APPLY"] == "1"
+    only_missing = ENV.fetch("ONLY_MISSING", "1") == "1"
+    overwrite = ENV["OVERWRITE"] == "1"
+    topo_json_dir = Pathname(ENV.fetch("TOPO_JSON_DIR", Thetopo::GpsUpdater::DEFAULT_JSON_DIR.to_s))
+
+    puts "Topo JSON dir: #{topo_json_dir}"
+    puts "Mode: #{apply ? 'APPLY (will write GPS)' : 'dry-run'}"
+    puts "Update: #{only_missing && !overwrite ? 'only problems without location' : 'all matched problems'}"
+    puts
+
+    results = Thetopo::GpsUpdater.sync_all(
+      apply: apply,
+      only_missing: only_missing,
+      overwrite: overwrite,
+      topo_json_dir: topo_json_dir
+    )
+
+    if results.empty?
+      puts "No thetopo-*.json files found (or no matching areas in DB).".yellow
+      next
+    end
+
+    totals = {
+      problems_total: 0,
+      matched: 0,
+      would_update: 0,
+      updated: 0,
+      skipped_has_location: 0,
+      skipped_no_match: 0
+    }
+
+    results.each do |result|
+      stats = result[:stats]
+      totals.each_key { |key| totals[key] += stats[key] }
+
+      puts "#{result[:area_slug]} (#{result[:crag_slug]})"
+      puts "  problems: #{stats[:problems_total]}, matched: #{stats[:matched]}, would update: #{stats[:would_update]}"
+      puts "  updated: #{stats[:updated]}" if apply
+      puts "  no match: #{stats[:skipped_no_match]}"
+      puts
+    end
+
+    puts "Totals across #{results.size} crags:"
+    totals.each { |key, value| puts "  #{key}: #{value}" }
+    puts
+    puts apply ? "done".green : "Dry run complete — re-run with APPLY=1 to write GPS".yellow
+  end
 end
