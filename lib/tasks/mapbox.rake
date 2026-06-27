@@ -3,101 +3,12 @@ require "rgeo/geo_json"
 namespace :mapbox do
   task areas: :environment do
     puts "exporting areas"
-
-    factory = RGeo::GeoJSON::EntityFactory.instance
-
-    area_features = []
-    hull_features = []
-
-    Area.published.each do |area|
-      hull = area.hull
-      next unless hull
-
-      hash = {}.with_indifferent_access
-      hash[:area_id] = area.id
-      # we store lat/lon as strings to make it easier to edit the geojson in tools like JOSM
-      hash[:south_west_lat] = area.bounds[:south_west].lat.to_s
-      hash[:south_west_lon] = area.bounds[:south_west].lon.to_s
-      hash[:north_east_lat] = area.bounds[:north_east].lat.to_s
-      hash[:north_east_lon] = area.bounds[:north_east].lon.to_s
-      hash.deep_transform_keys! { |key| key.camelize(:lower) }
-      hull_features << factory.feature(hull, nil, hash)
-
-      hash = {}.with_indifferent_access
-      hash[:name] = area.short_name || area.name
-      hash[:area_id] = area.id
-      hash[:priority] = area.priority
-      # we store lat/lon as strings to make it easier to edit the geojson in tools like JOSM
-      hash[:south_west_lat] = area.bounds[:south_west].lat.to_s
-      hash[:south_west_lon] = area.bounds[:south_west].lon.to_s
-      hash[:north_east_lat] = area.bounds[:north_east].lat.to_s
-      hash[:north_east_lon] = area.bounds[:north_east].lon.to_s
-      hash.deep_transform_keys! { |key| key.camelize(:lower) }
-      area_features << factory.feature(hull.centroid, nil, hash)
-    end
-
-    feature_collection = factory.feature_collection(
-      area_features + hull_features
-    )
-
-    geo_json = JSON.pretty_generate(RGeo::GeoJSON.encode(feature_collection))
-
-    file_name = Rails.root.join("..", "boolder-maps", "mapbox", "areas.geojson")
-
-    File.open(file_name, "w") do |f|
-      f.write(geo_json)
-    end
-
-    puts "exported areas.geojson".green
+    Map::GeojsonExporter.export!("areas")
   end
 
   task clusters: :environment do
     puts "exporting clusters"
-
-    factory = RGeo::GeoJSON::EntityFactory.instance
-
-    cluster_features = []
-    hull_features = []
-
-    Cluster.all.each do |cluster|
-      hull = Problem.with_location.where(area_id: cluster.areas.select(:id)).
-        select("st_buffer(st_convexhull(st_collect(location::geometry)),0.00007) as hull").to_a.first&.hull
-      next unless hull
-
-      hash = {}.with_indifferent_access
-      hash[:cluster_id] = cluster.id
-      hash[:name] = cluster.name
-
-      hash.deep_transform_keys! { |key| key.camelize(:lower) }
-      hull_features << factory.feature(hull, nil, hash)
-
-      if cluster.sw && cluster.ne && cluster.center
-        hash = {}.with_indifferent_access
-        hash[:cluster_id] = cluster.id
-        hash[:name] = cluster.name
-        hash[:south_west_lat] = cluster.sw.lat.to_s
-        hash[:south_west_lon] = cluster.sw.lon.to_s
-        hash[:north_east_lat] = cluster.ne.lat.to_s
-        hash[:north_east_lon] = cluster.ne.lon.to_s
-
-        hash.deep_transform_keys! { |key| key.camelize(:lower) }
-        cluster_features << factory.feature(cluster.center, nil, hash)
-      end
-    end
-
-    feature_collection = factory.feature_collection(
-      cluster_features + hull_features
-    )
-
-    geo_json = JSON.pretty_generate(RGeo::GeoJSON.encode(feature_collection))
-
-    file_name = Rails.root.join("..", "boolder-maps", "mapbox", "clusters.geojson")
-
-    File.open(file_name, "w") do |f|
-      f.write(geo_json)
-    end
-
-    puts "exported clusters.geojson".green
+    Map::GeojsonExporter.export!("clusters")
   end
 
   task problems: :environment do
