@@ -49,12 +49,20 @@ class Area < ApplicationRecord
     [ id, name ].join(" - ")
   end
 
+  def hull
+    problems.with_location.
+      select("st_buffer(st_convexhull(st_collect(location::geometry)),0.00007) as hull").
+      to_a.first&.hull
+  end
+
   def bounds
-    relevant_boulders = boulders.where(ignore_for_area_hull: false)
-    @bounds ||= {
-      south_west: FACTORY.point(relevant_boulders.minimum("st_xmin(polygon::geometry)"), relevant_boulders.minimum("st_ymin(polygon::geometry)")),
-      north_east: FACTORY.point(relevant_boulders.maximum("st_xmax(polygon::geometry)"), relevant_boulders.maximum("st_ymax(polygon::geometry)"))
-    }
+    @bounds ||= begin
+      relevant = problems.with_location
+      {
+        south_west: FACTORY.point(relevant.minimum("st_x(location::geometry)"), relevant.minimum("st_y(location::geometry)")),
+        north_east: FACTORY.point(relevant.maximum("st_x(location::geometry)"), relevant.maximum("st_y(location::geometry)"))
+      }
+    end
   end
 
   def serialized_bounds

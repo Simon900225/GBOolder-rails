@@ -203,7 +203,7 @@ export default class extends Controller {
       id: 'problems',
       type: 'circle',
       source: 'problems',
-      minzoom: 15,
+      minzoom: 12,
       layout: {
         'visibility': 'visible',
         'circle-sort-key': 
@@ -222,9 +222,9 @@ export default class extends Controller {
           "interpolate",
           ["linear"],
           ["zoom"],
-          14.5,
+          12.5,
           0,
-          15,
+          14,
           1
         ]
       },
@@ -236,7 +236,7 @@ export default class extends Controller {
         id: layerId,
         type: 'circle',
         source: 'problems',
-        minzoom: 15,
+        minzoom: 12,
         paint: this.stackedProblemCirclePaint(index === 0),
         filter: this.stackedProblemFilter(),
       })
@@ -404,7 +404,7 @@ export default class extends Controller {
             20,
           ]
         ,
-        'circle-color': "#FFCC02",
+        'circle-color': "#009999",
         'circle-opacity': 0.25,
         'circle-stroke-width': 2,
         'circle-stroke-color': 'white'
@@ -496,7 +496,7 @@ export default class extends Controller {
             15
           ]
         ,
-        'circle-color': "#FFDC36",
+        'circle-color': "#009999",
         // 'circle-opacity': 0.25,
         'circle-stroke-width': 2,
         'circle-stroke-color': '#fff'
@@ -565,7 +565,7 @@ export default class extends Controller {
       ["match", ["get", "circuitColor"], ["", "red"], true, false], "#FF3B2F",
       ["match", ["get", "circuitColor"], ["", "black"], true, false], "#000",
       ["match", ["get", "circuitColor"], ["", "white"], true, false], "#FFFFFF",
-      "#878A8D"
+      "#009999"
     ]
   }
 
@@ -578,8 +578,9 @@ export default class extends Controller {
       'interpolate',
       ['linear'],
       ['zoom'],
-      15, 2,
-      18, 4,
+      12, 3,
+      15, 4,
+      18, 8,
       22,
       [
         'case',
@@ -594,17 +595,17 @@ export default class extends Controller {
     const sign = isBackCircle ? 0 : 1
     return {
       'circle-radius': this.problemCircleRadius(),
-      'circle-color': '#878A8D',
+      'circle-color': '#009999',
       'circle-stroke-width': [
         'interpolate', ['linear'], ['zoom'],
-        15, 1,
+        12, 1,
         18, 1.5,
         22, 2
       ],
       'circle-stroke-color': '#fff',
       'circle-translate': [
         'interpolate', ['linear'], ['zoom'],
-        15, ['literal', [sign * 2, -sign * 2]],
+        12, ['literal', [sign * 2, -sign * 2]],
         18, ['literal', [sign * 4, -sign * 4]],
         22, ['literal', [sign * 10, -sign * 10]]
       ],
@@ -743,6 +744,11 @@ export default class extends Controller {
     });
   }
 
+  hasProblemAtPoint(point) {
+    const layers = ['problems', ...this.stackedProblemLayerIds()]
+    return this.map.queryRenderedFeatures(point, { layers }).length > 0
+  }
+
   setupClickEvents() {
 
     if(!this.circuit7aValue) {
@@ -773,8 +779,7 @@ export default class extends Controller {
       });
 
       this.map.on('click', (e) => {
-        const features = this.map.queryRenderedFeatures(e.point, { layers: ['problems', ...this.stackedProblemLayerIds()] })
-        if (features.length === 0) {
+        if (!this.hasProblemAtPoint(e.point)) {
           if (this.activeStackPopup) {
             this.activeStackPopup.remove()
             this.activeStackPopup = null
@@ -883,7 +888,7 @@ export default class extends Controller {
     });
 
     this.map.on('click', 'areas', (e) => {
-      if(this.map.getZoom() < 15) {
+      if(this.map.getZoom() < 15 && !this.hasProblemAtPoint(e.point)) {
         let props = e.features[0].properties
         this.flyToBounds([[props.southWestLon, props.southWestLat], [props.northEastLon, props.northEastLat]])
       }
@@ -902,9 +907,8 @@ export default class extends Controller {
     });
 
     this.map.on('click', 'areas-hulls', (e) => {
-      if(this.map.getZoom() < 15) {
+      if(this.map.getZoom() < 15 && !this.hasProblemAtPoint(e.point)) {
         let props = e.features[0].properties
-        // console.log(props)
         this.flyToBounds([[props.southWestLon, props.southWestLat], [props.northEastLon, props.northEastLat]])
       }
     });

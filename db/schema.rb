@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_21_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_23_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -237,6 +237,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_21_120000) do
     t.integer "gbo_sector_id"
     t.string "gbo_sector_name"
     t.string "gbo_url"
+    t.string "gbo_image_url"
     t.index ["area_id"], name: "index_problems_on_area_id"
     t.index ["circuit_id"], name: "index_problems_on_circuit_id"
     t.index ["gbo_id"], name: "index_problems_on_gbo_id", unique: true, where: "(gbo_id IS NOT NULL)"

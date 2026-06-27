@@ -37,6 +37,34 @@ namespace :gbo do
     puts "done".green
   end
 
+  desc "Backfill gbo_image_url on problems from scraper JSON"
+  task backfill_image_urls: :environment do
+    json_path = Gbo::Importer.default_json_path
+    raise "JSON file not found: #{json_path}" unless File.exist?(json_path)
+
+    data = Gbo::Importer.parse_json_file(json_path)
+    updated = 0
+
+    data.fetch("areas").each do |area_data|
+      problems = area_data.fetch("problems", [])
+      area_data.fetch("sectors", []).each do |sector|
+        problems.concat(sector.fetch("problems", []))
+      end
+
+      problems.each do |problem_data|
+        gbo_id = problem_data["gbo_id"]
+        image_url = problem_data.fetch("image_urls", []).first
+        next if gbo_id.blank? || image_url.blank?
+
+        count = Problem.where(gbo_id: gbo_id).update_all(gbo_image_url: image_url)
+        updated += count
+      end
+    end
+
+    puts "Updated #{updated} problems with gbo_image_url"
+    puts "done".green
+  end
+
   desc "Download GBO problem photos as unpublished topos"
   task photos: :environment do
     delay = ENV.fetch("GBO_PHOTO_DELAY", Gbo::PhotoImporter::DEFAULT_DELAY)

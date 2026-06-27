@@ -31,6 +31,15 @@ module ProblemsHelper
     area_problem_path(problem.area, problem)
   end
 
+  def problem_photo_url(problem)
+    line = problem.lines.published.includes(topo: { photo_attachment: :blob }).first
+    if line&.topo&.photo&.attached?
+      cdn_image_url(line.topo.photo.variant(:medium))
+    else
+      problem.gbo_image_url.presence
+    end
+  end
+
   def circle_view(content, background_color: "", text_color: "", klass: "h-6 w-6 leading-6")
     content_tag(:span, content,
       style: "background-color: #{background_color}; color: #{text_color}",

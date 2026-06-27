@@ -10,8 +10,8 @@ namespace :mapbox do
     hull_features = []
 
     Area.published.each do |area|
-      hull = area.boulders.where(ignore_for_area_hull: false).
-        select("st_buffer(st_convexhull(st_collect(polygon::geometry)),0.00007) as hull").to_a.first.hull
+      hull = area.hull
+      next unless hull
 
       hash = {}.with_indifferent_access
       hash[:area_id] = area.id
@@ -60,8 +60,9 @@ namespace :mapbox do
     hull_features = []
 
     Cluster.all.each do |cluster|
-      hull = Boulder.where(area_id: cluster.areas.map(&:id)).where(ignore_for_area_hull: false).
-        select("st_buffer(st_convexhull(st_collect(polygon::geometry)),0.00007) as hull").to_a.first.hull
+      hull = Problem.with_location.where(area_id: cluster.areas.select(:id)).
+        select("st_buffer(st_convexhull(st_collect(location::geometry)),0.00007) as hull").to_a.first&.hull
+      next unless hull
 
       hash = {}.with_indifferent_access
       hash[:cluster_id] = cluster.id
