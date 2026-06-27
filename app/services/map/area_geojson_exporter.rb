@@ -28,14 +28,6 @@ module Map
     end
 
     def editor_bounds
-      if @area.boulders.any?
-        sw = @area.bounds[:south_west]
-        ne = @area.bounds[:north_east]
-        if sw&.lon && ne&.lon
-          return pad_bounds([ sw.lon, sw.lat ], [ ne.lon, ne.lat ])
-        end
-      end
-
       problems = @area.problems.with_location
       if problems.any?
         lons = problems.map { |p| p.location.lon }

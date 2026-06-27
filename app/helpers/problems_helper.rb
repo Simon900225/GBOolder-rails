@@ -32,9 +32,9 @@ module ProblemsHelper
   end
 
   def problem_photo_url(problem)
-    line = problem.lines.published.includes(topo: { photo_attachment: :blob }).first
-    if line&.topo&.photo&.attached?
-      cdn_image_url(line.topo.photo.variant(:medium))
+    line = problem.lines.published.includes(:topo).first
+    if line
+      topo_image_url(line.topo)
     else
       problem.gbo_image_url.presence
     end

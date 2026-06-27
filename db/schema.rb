@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_23_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_23_210000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -253,6 +253,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_23_120000) do
     t.json "metadata"
     t.integer "boulder_id"
     t.integer "position"
+    t.string "gbo_image_url"
     t.index ["boulder_id", "position"], name: "index_topos_on_boulder_id_and_position", unique: true
     t.index ["boulder_id"], name: "index_topos_on_boulder_id"
   end

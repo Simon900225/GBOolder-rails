@@ -220,14 +220,14 @@ Optional: import reference photos from GBO (~40 min):
 rake gbo:photos
 ```
 
-Optional: import phototopo images and line drawings from GBO:
+Optional: import phototopo line drawings from GBO (images stay on gbo.crimp.se):
 
 ```bash
 # Scrape (see ../GBO-scraper/README.md), then:
 GBO_PHOTOTOPO_JSON=../GBO-scraper/output/gbo-phototopos.json rake gbo:phototopos
 ```
 
-Set `GBO_PHOTOTOPO_PUBLISH=0` to import as unpublished topos. Re-runs skip already-imported phototopos; use `OVERWRITE=1` to replace existing line coordinates.
+Set `GBO_PHOTOTOPO_PUBLISH=0` to import as unpublished topos. Re-runs update GBO image URLs and remove any locally stored copies. Use `OVERWRITE=1` to replace existing line coordinates.
 
 > **Note:** `GBO_JSON` defaults to `../GBO-scraper/output/gbo.json`. Set `GBO_PUBLISH=1` so areas appear on the map.
 

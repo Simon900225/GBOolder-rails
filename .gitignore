@@ -36,6 +36,7 @@
 
 /public/packs
 /public/packs-test
+/public/geojson/*.geojson
 /node_modules
 /yarn-error.log
 yarn-debug.log*

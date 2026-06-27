@@ -1,6 +1,9 @@
 module Thetopo
   class GpsUpdater
     DEFAULT_JSON_DIR = Rails.root.join("../GBO-scraper/output")
+    #TOPO_TO_GBO_AREA = {
+    #  "utby-boulder" => "utby"
+    #}.freeze
 
     attr_reader :stats
 
@@ -26,7 +29,7 @@ module Thetopo
     def run
       area = Area.find_by!(slug: @area_slug)
       topo = self.class.parse_json_file(@topo_json_path)
-      gbo_sectors = load_gbo_sector_index(topo.fetch("crag_slug"))
+      gbo_sectors = load_gbo_sector_index(@area_slug)
 
       route_index = build_route_index(topo)
       sector_index = build_sector_index(topo, gbo_sectors)
@@ -62,6 +65,42 @@ module Thetopo
 
     def self.default_topo_json_path(crag_slug)
       DEFAULT_JSON_DIR.join("thetopo-#{crag_slug}.json")
+    end
+
+    def self.gbo_area_slug_for(topo_data)
+      topo_data["gbo_area_slug"].presence ||
+        TOPO_TO_GBO_AREA[topo_data.fetch("crag_slug")] ||
+        topo_data.fetch("crag_slug")
+    end
+
+    def self.sync_all(
+      apply: false,
+      only_missing: true,
+      overwrite: false,
+      topo_json_dir: DEFAULT_JSON_DIR
+    )
+      results = []
+      #Dir.glob(topo_json_dir.join("thetopo-*.json")).sort.each do |path|
+      #  topo = parse_json_file(path)
+      #  area_slug = gbo_area_slug_for(topo)
+      #  next unless Area.exists?(slug: area_slug)
+#
+      #  stats = new(
+      #    area_slug: area_slug,
+      #    topo_json_path: path,
+      #    apply: apply,
+      #    only_missing: only_missing,
+      #    overwrite: overwrite
+      #  ).run
+#
+      #  results << {
+      #    area_slug: area_slug,
+      #    crag_slug: topo.fetch("crag_slug"),
+      #    topo_json_path: path,
+      #    stats: stats
+      #  }
+      #end
+      results
     end
 
     def self.parse_json_file(path)

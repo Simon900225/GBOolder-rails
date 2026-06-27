@@ -10,7 +10,7 @@ class Topo < ApplicationRecord
 
   scope :published, -> { where(published: true) }
 
-  validates :photo, presence: true
+  validate :photo_or_gbo_image_url_present
 
   def area_id
     problems.first&.area_id
@@ -30,5 +30,13 @@ class Topo < ApplicationRecord
 
   def metadata_heading
     metadata["heading"]
+  end
+
+  private
+
+  def photo_or_gbo_image_url_present
+    return if photo.attached? || gbo_image_url.present?
+
+    errors.add(:base, "must have a photo or GBO image URL")
   end
 end

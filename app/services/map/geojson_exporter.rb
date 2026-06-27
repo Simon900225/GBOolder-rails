@@ -3,14 +3,36 @@ require "rgeo/geo_json"
 module Map
   class GeojsonExporter
     BOULDER_EXCLUDED_AREA_IDS = [ 45, 75, 79, 104, 113 ].freeze
+    PUBLIC_DIR = Rails.root.join("public/geojson")
+    DATA_DIR = Rails.root.join("../GBOolder-data/geojson")
+    CACHED_EXPORTS = %w[areas clusters].freeze
 
     class << self
       def areas
-        encode(area_features + area_hull_features)
+        cached("areas") { encode(area_features + area_hull_features) }
       end
 
       def clusters
-        encode(cluster_features + cluster_hull_features)
+        cached("clusters") { encode(cluster_features + cluster_hull_features) }
+      end
+
+      def export!(name)
+        raise ArgumentError, "unknown export: #{name}" unless CACHED_EXPORTS.include?(name)
+
+        refresh_export!(name) { encode(yield_features(name)) }
+      end
+
+      def export_all!
+        CACHED_EXPORTS.each { |name| export!(name) }
+      end
+
+      def cached_file_fresh?(name)
+        path = public_path(name)
+        path.exist? && !stale?(path)
+      end
+
+      def public_path(name)
+        PUBLIC_DIR.join("#{name}.geojson")
       end
 
       def problems
@@ -22,6 +44,42 @@ module Map
       end
 
       private
+
+      def cached(name)
+        path = public_path(name)
+        return File.read(path) if path.exist? && !stale?(path)
+
+        refresh_export!(name) { yield }
+      end
+
+      def refresh_export!(name)
+        json = yield
+        write_export(name, json)
+        json
+      end
+
+      def write_export(name, json)
+        [ PUBLIC_DIR, DATA_DIR ].each do |dir|
+          FileUtils.mkdir_p(dir)
+          File.write(dir.join("#{name}.geojson"), json)
+        end
+      end
+
+      def stale?(path)
+        path.mtime < data_version
+      end
+
+      def data_version
+        [ Area.maximum(:updated_at), Problem.maximum(:updated_at) ].compact.max || Time.at(0)
+      end
+
+      def yield_features(name)
+        case name
+        when "areas" then area_features + area_hull_features
+        when "clusters" then cluster_features + cluster_hull_features
+        else raise ArgumentError, "unknown export: #{name}"
+        end
+      end
 
       def factory
         RGeo::GeoJSON::EntityFactory.instance
@@ -48,7 +106,7 @@ module Map
 
       def area_hull_features
         Area.published.filter_map do |area|
-          hull = area_hull_for(area)
+          hull = area.hull
           next unless hull
 
           factory.feature(hull, nil, area_bounds_hash(area))
@@ -57,7 +115,7 @@ module Map
 
       def area_features
         Area.published.filter_map do |area|
-          hull = area_hull_for(area)
+          hull = area.hull
           next unless hull
 
           bounds = area.serialized_bounds
@@ -75,12 +133,6 @@ module Map
         end
       end
 
-      def area_hull_for(area)
-        area.boulders.where(ignore_for_area_hull: false).
-          select("st_buffer(st_convexhull(st_collect(polygon::geometry)),0.00007) as hull").
-          to_a.first&.hull
-      end
-
       def label_point(hull)
         centroid = hull.centroid
         lon = centroid.respond_to?(:lon) ? centroid.lon : centroid.x
@@ -90,8 +142,8 @@ module Map
 
       def cluster_hull_features
         Cluster.all.filter_map do |cluster|
-          hull = Boulder.where(area_id: cluster.areas.map(&:id)).where(ignore_for_area_hull: false).
-            select("st_buffer(st_convexhull(st_collect(polygon::geometry)),0.00007) as hull").
+          hull = Problem.with_location.where(area_id: cluster.areas.select(:id)).
+            select("st_buffer(st_convexhull(st_collect(location::geometry)),0.00007) as hull").
             to_a.first&.hull
           next unless hull
 

@@ -142,6 +142,7 @@ module Gbo
         gbo_sector_id: sector_id || data["gbo_sector_id"],
         gbo_sector_name: sector_name,
         gbo_url: data["permalink"] || data["url"],
+        gbo_image_url: data.fetch("image_urls", []).first,
         steepness: "other",
         ascents: data["ascent_count"],
         sit_start: data["sit_start"] == true,
