@@ -158,8 +158,8 @@ export default class extends Controller {
         ],
         'fill-opacity': [
           'interpolate', ['linear'], ['zoom'],
-          0, 1,
-          13, 1,
+          0, 0.7,
+          13, 0.7,
           15, 0
         ],
         'fill-outline-color': [
