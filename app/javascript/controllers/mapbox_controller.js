@@ -141,6 +141,7 @@ export default class extends Controller {
       filter: ['==', ['geometry-type'], 'Polygon'],
       paint: {
         'fill-color': 'hsl(0, 0%, 80%)',
+        'fill-opacity': this.problemCircleOpacity(),
         'fill-outline-color': 'hsla(0, 0%, 70%, 0)',
       },
     });
@@ -217,16 +218,14 @@ export default class extends Controller {
       paint: {
         'circle-radius': this.problemCircleRadius(),
         'circle-color': this.circuitColorExpression(),
-        'circle-opacity': 
-        [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          12.5,
-          0,
-          14,
-          1
-        ]
+        'circle-opacity': this.problemCircleOpacity(),
+        'circle-stroke-width': [
+          'interpolate', ['linear'], ['zoom'],
+          12, 1,
+          18, 1.5,
+          22, 2
+        ],
+        'circle-stroke-color': '#fff',
       },
       filter: this.singleProblemFilter(),
     });
@@ -591,11 +590,20 @@ export default class extends Controller {
     ]
   }
 
+  problemCircleOpacity() {
+    return [
+      'interpolate', ['linear'], ['zoom'],
+      12.5, 0.5,
+      14, 1
+    ]
+  }
+
   stackedProblemCirclePaint(isBackCircle) {
     const sign = isBackCircle ? 0 : 1
     return {
       'circle-radius': this.problemCircleRadius(),
       'circle-color': '#009999',
+      'circle-opacity': this.problemCircleOpacity(),
       'circle-stroke-width': [
         'interpolate', ['linear'], ['zoom'],
         12, 1,
