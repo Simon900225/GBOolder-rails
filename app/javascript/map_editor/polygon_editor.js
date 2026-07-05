@@ -1,4 +1,4 @@
-export function squareAround(lngLat, sizeMeters = 25) {
+export function squareAround(lngLat, sizeMeters = 10) {
   const [lng, lat] = lngLat
   const latRad = lat * Math.PI / 180
   const halfLat = (sizeMeters / 2) / 111320
@@ -12,7 +12,7 @@ export function squareAround(lngLat, sizeMeters = 25) {
   ]
 }
 
-export function lineAround(lngLat, lengthMeters = 25) {
+export function lineAround(lngLat, lengthMeters = 10) {
   const [lng, lat] = lngLat
   const latRad = lat * Math.PI / 180
   const halfLng = (lengthMeters / 2) / (111320 * Math.cos(latRad))
@@ -37,6 +37,25 @@ export function openRing(ring) {
   const last = ring[ring.length - 1]
   if (first[0] === last[0] && first[1] === last[1]) return ring.slice(0, -1)
   return ring
+}
+
+export function segmentLengthMeters(a, b) {
+  const midLat = (a[1] + b[1]) / 2
+  const latRad = midLat * Math.PI / 180
+  const metersPerDegreeLat = 111320
+  const metersPerDegreeLng = 111320 * Math.cos(latRad)
+  const dLat = (b[1] - a[1]) * metersPerDegreeLat
+  const dLng = (b[0] - a[0]) * metersPerDegreeLng
+  return Math.hypot(dLat, dLng)
+}
+
+export function formatLengthMeters(meters) {
+  if (meters < 10) return `${meters.toFixed(1)} m`
+  return `${Math.round(meters)} m`
+}
+
+function segmentMidpoint(a, b) {
+  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
 }
 
 function distanceToSegment(px, py, x1, y1, x2, y2) {
@@ -79,6 +98,7 @@ export class PolygonEditor {
     this.map = map
     this.onChange = onChange
     this.vertexMarkers = []
+    this.edgeLabelMarkers = []
     this.selectedBoulder = null
     this.selectedWall = null
     this.draggingBoulder = null
@@ -97,7 +117,9 @@ export class PolygonEditor {
     this.selectedWall = null
     if (!boulder) return
 
-    this.addVertexMarkers(openRing(boulder.coordinates), boulder)
+    const ring = openRing(boulder.coordinates)
+    this.addVertexMarkers(ring, boulder)
+    this.syncSelectedEdgeLabels()
   }
 
   selectWall(wall) {
@@ -107,6 +129,7 @@ export class PolygonEditor {
     if (!wall) return
 
     this.addVertexMarkers(wall.coordinates, wall)
+    this.syncSelectedEdgeLabels()
   }
 
   isNearVertex(lngLat, thresholdPx = 16) {
@@ -130,12 +153,14 @@ export class PolygonEditor {
 
       marker.on('drag', () => {
         feature.coordinates[index] = [marker.getLngLat().lng, marker.getLngLat().lat]
+        this.syncSelectedEdgeLabels()
         this.onChange()
       })
 
       marker.on('dragend', () => {
         feature.coordinates[index] = [marker.getLngLat().lng, marker.getLngLat().lat]
         feature.dirty = true
+        this.syncSelectedEdgeLabels()
         this.onChange()
       })
 
@@ -146,8 +171,43 @@ export class PolygonEditor {
   clearVertexMarkers() {
     this.vertexMarkers.forEach((marker) => marker.remove())
     this.vertexMarkers = []
+    this.clearEdgeLabelMarkers()
     this.selectedBoulder = null
     this.selectedWall = null
+  }
+
+  clearEdgeLabelMarkers() {
+    this.edgeLabelMarkers.forEach((marker) => marker.remove())
+    this.edgeLabelMarkers = []
+  }
+
+  syncSelectedEdgeLabels() {
+    if (this.selectedBoulder) {
+      this.syncEdgeLabelMarkers(openRing(this.selectedBoulder.coordinates))
+    } else if (this.selectedWall) {
+      this.syncEdgeLabelMarkers(this.selectedWall.coordinates, { closed: false })
+    }
+  }
+
+  syncEdgeLabelMarkers(coordinates, { closed = true } = {}) {
+    this.clearEdgeLabelMarkers()
+    const segmentCount = closed ? coordinates.length : Math.max(0, coordinates.length - 1)
+
+    for (let i = 0; i < segmentCount; i++) {
+      const a = coordinates[i]
+      const b = closed ? coordinates[(i + 1) % coordinates.length] : coordinates[i + 1]
+      const el = document.createElement('div')
+      el.className = 'map-editor-edge-label'
+      el.textContent = formatLengthMeters(segmentLengthMeters(a, b))
+      el.style.cssText =
+        'font-size:11px;font-weight:500;white-space:nowrap;background:rgba(255,255,255,0.85);padding:1px 4px;border-radius:2px;box-shadow:0 1px 2px rgba(0,0,0,0.2);pointer-events:none;color:#333;'
+
+      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+        .setLngLat(segmentMidpoint(a, b))
+        .addTo(this.map)
+
+      this.edgeLabelMarkers.push(marker)
+    }
   }
 
   tryInsertVertex(clickLngLat) {
@@ -271,6 +331,10 @@ export class PolygonEditor {
     this.vertexMarkers.forEach((marker, index) => {
       marker.setLngLat(coords[index])
     })
+
+    if (this.draggingBoulder || this.draggingWall) {
+      this.syncSelectedEdgeLabels()
+    }
 
     this.draggedProblems.forEach((problem, index) => {
       const start = this.draggedProblemStartCoords[index]
